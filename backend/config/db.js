@@ -1,15 +1,28 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const DB_PATH = process.env.DB_PATH || './database.sqlite';
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'database.sqlite');
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Error opening database:', err);
   } else {
     console.log('Connected to SQLite database');
-    initializeDatabase();
+    db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+      if (pragmaErr) {
+        console.error('Error enabling foreign keys:', pragmaErr);
+      }
+      initializeDatabase();
+    });
   }
 });
+
+function addColumnSafe(table, column, definition) {
+  db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`, (err) => {
+    if (err && !/duplicate column name/i.test(err.message)) {
+      console.error(`Error adding ${table}.${column}:`, err.message);
+    }
+  });
+}
 
 function initializeDatabase() {
   db.serialize(() => {
@@ -46,6 +59,14 @@ function initializeDatabase() {
         FOREIGN KEY(autor_id) REFERENCES usuarios(id)
       )
     `);
+
+    addColumnSafe('contenido', 'slug', 'TEXT');
+    addColumnSafe('contenido', 'cuerpo', 'TEXT');
+    addColumnSafe('contenido', 'extracto', 'TEXT');
+    addColumnSafe('contenido', 'autor_nombre', 'TEXT');
+    addColumnSafe('contenido', 'vistas', 'INTEGER DEFAULT 0');
+    addColumnSafe('contenido', 'publicado_at', 'DATETIME');
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_contenido_slug ON contenido(slug) WHERE slug IS NOT NULL');
 
     // Tabla archivos (PDF, documentos, etc.)
     db.run(`
@@ -111,6 +132,48 @@ function initializeDatabase() {
         estado TEXT DEFAULT 'borrador' CHECK(estado IN ('borrador', 'aprobado')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(autor_id) REFERENCES usuarios(id)
+      )
+    `);
+
+    // Tabla detalle editorial de capítulos
+    db.run(`
+      CREATE TABLE IF NOT EXISTS capitulo_detalle (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        nombre TEXT NOT NULL,
+        siglas TEXT,
+        descripcion_corta TEXT,
+        descripcion_larga TEXT,
+        logo_path TEXT,
+        imagen_portada_path TEXT,
+        color TEXT,
+        email_contacto TEXT,
+        link_externo TEXT,
+        redes_json TEXT,
+        director_id INTEGER,
+        mision TEXT,
+        vision TEXT,
+        fecha_fundacion DATE,
+        activo INTEGER DEFAULT 1,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(director_id) REFERENCES usuarios(id)
+      )
+    `);
+
+    // Tabla archivos editoriales de contenido
+    db.run(`
+      CREATE TABLE IF NOT EXISTS contenido_archivos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contenido_id INTEGER NOT NULL,
+        tipo TEXT NOT NULL CHECK(tipo IN ('imagen', 'documento')),
+        archivo_path TEXT NOT NULL,
+        nombre_original TEXT,
+        mime_type TEXT,
+        tamaño_bytes INTEGER,
+        orden INTEGER DEFAULT 0,
+        caption TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(contenido_id) REFERENCES contenido(id) ON DELETE CASCADE
       )
     `);
 
