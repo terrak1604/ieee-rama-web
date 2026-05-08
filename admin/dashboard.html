@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Admin IEEE Rama</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+  <div class="particles-bg"></div>
+
+  <nav class="admin-navbar">
+    <div class="navbar-content">
+      <div class="navbar-brand">
+        <h2>IEEE Admin</h2>
+        <span id="userRole" class="user-badge"></span>
+      </div>
+      <div class="navbar-menu">
+        <span id="userName"></span>
+        <button id="logoutBtn" class="btn-outline">Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-menu">
+        <h3>Menú</h3>
+        <button class="menu-item active" data-tab="inicio">📊 Inicio</button>
+
+        <!-- Para directores de capítulo -->
+        <div id="directorMenu">
+          <button class="menu-item" data-tab="crear-noticia">📝 Nueva Noticia</button>
+          <button class="menu-item" data-tab="crear-proyecto">🚀 Nuevo Proyecto</button>
+          <button class="menu-item" data-tab="crear-evento">📅 Nuevo Evento</button>
+          <button class="menu-item" data-tab="mis-contenidos">📋 Mi Contenido</button>
+        </div>
+
+        <!-- Para directores de rama -->
+        <div id="ramaMenu" class="hidden">
+          <button class="menu-item" data-tab="crear-noticia">📝 Nuevo Anuncio</button>
+          <button class="menu-item" data-tab="pendientes">⏳ Pendientes Aprobación</button>
+          <button class="menu-item" data-tab="contenido-publicado">✅ Contenido Publicado</button>
+          <button class="menu-item" data-tab="cuentas">👤 Cuentas y Accesos</button>
+          <button class="menu-item" data-tab="site-images">🖼️ Imágenes del Sitio</button>
+        </div>
+
+        <hr class="sidebar-divider">
+        <button class="menu-item" data-tab="crear-revista">📰 Nueva Revista</button>
+        <button class="menu-item" data-tab="subir-galeria">🖼️ Subir Galería</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+      <!-- TAB: Inicio -->
+      <section id="inicio" class="tab-content active">
+        <h1>Bienvenido al Panel de Administración</h1>
+        <div class="welcome-cards">
+          <div class="card">
+            <h3 id="cardTitleDirector">Sube tu contenido</h3>
+            <p id="cardDescDirector">Crea noticias, proyectos y eventos para tu capítulo. Después se enviará a aprobación.</p>
+          </div>
+          <div class="card">
+            <h3 id="cardTitleRama">Aprueba contenido</h3>
+            <p id="cardDescRama">Revisa y aprueba el contenido enviado por los directores de capítulos.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: Crear Noticia -->
+      <section id="crear-noticia" class="tab-content">
+        <h1>Nueva Noticia</h1>
+        <form id="formNoticia" class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="noticiaTitulo">Título *</label>
+              <input type="text" id="noticiaTitulo" required>
+            </div>
+            <div class="form-group">
+              <label for="noticiaCategoria">Categoría *</label>
+              <select id="noticiaCategoria" required>
+                <option value="">Selecciona categoría</option>
+                <option value="convocatoria">Convocatoria</option>
+                <option value="evento">Evento</option>
+                <option value="charla">Charla</option>
+                <option value="programa">Programa</option>
+                <option value="actividad">Actividad</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="noticiaDesc">Descripción *</label>
+            <textarea id="noticiaDesc" rows="5" required></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="noticiaImagen">Imagen</label>
+              <input type="file" id="noticiaImagen" accept="image/*">
+            </div>
+            <div class="form-group">
+              <label for="noticiaLink">Link</label>
+              <input type="url" id="noticiaLink" placeholder="https://...">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Publicar</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="noticiaStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+
+      <!-- TAB: Crear Proyecto -->
+      <section id="crear-proyecto" class="tab-content">
+        <h1>Nuevo Proyecto</h1>
+        <form id="formProyecto" class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="proyectoTitulo">Nombre del Proyecto *</label>
+              <input type="text" id="proyectoTitulo" required>
+            </div>
+            <div class="form-group">
+              <label for="proyectoIntegrantes">Integrantes *</label>
+              <input type="text" id="proyectoIntegrantes" placeholder="Ej: Juan, María, Carlos" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="proyectoDesc">Descripción *</label>
+            <textarea id="proyectoDesc" rows="5" required></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="proyectoImagen">Imagen</label>
+              <input type="file" id="proyectoImagen" accept="image/*">
+            </div>
+            <div class="form-group">
+              <label for="proyectoLink">Link al repositorio</label>
+              <input type="url" id="proyectoLink" placeholder="https://github.com/...">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Crear Proyecto</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="proyectoStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+
+      <!-- TAB: Crear Evento -->
+      <section id="crear-evento" class="tab-content">
+        <h1>Nuevo Evento</h1>
+        <form id="formEvento" class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="eventoTitulo">Título del Evento *</label>
+              <input type="text" id="eventoTitulo" required>
+            </div>
+            <div class="form-group">
+              <label for="eventoFecha">Fecha *</label>
+              <input type="datetime-local" id="eventoFecha" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="eventoLugar">Lugar *</label>
+              <input type="text" id="eventoLugar" required>
+            </div>
+            <div class="form-group">
+              <label for="eventoLink">Link de registro</label>
+              <input type="url" id="eventoLink" placeholder="https://...">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="eventoDesc">Descripción *</label>
+            <textarea id="eventoDesc" rows="5" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="eventoImagen">Imagen</label>
+            <input type="file" id="eventoImagen" accept="image/*">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Crear Evento</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="eventoStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+
+      <!-- TAB: Mi Contenido (Director) -->
+      <section id="mis-contenidos" class="tab-content">
+        <h1>Mi Contenido</h1>
+        <div id="misContenidosList" class="content-list"></div>
+      </section>
+
+      <!-- TAB: Pendientes de Aprobación (Rama) -->
+      <section id="pendientes" class="tab-content">
+        <h1>Contenido Pendiente de Aprobación</h1>
+        <div id="pendientesList" class="approval-list"></div>
+      </section>
+
+      <!-- TAB: Contenido Publicado (Rama) -->
+      <section id="contenido-publicado" class="tab-content">
+        <h1>Contenido Publicado</h1>
+        <div id="publicadoList" class="content-list"></div>
+      </section>
+
+      <!-- TAB: Cuentas y Accesos (Rama) -->
+      <section id="cuentas" class="tab-content">
+        <h1>Cuentas y Accesos</h1>
+        <form id="formUsuario" class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="usuarioNombre">Nombre *</label>
+              <input type="text" id="usuarioNombre" required>
+            </div>
+            <div class="form-group">
+              <label for="usuarioEmail">Email *</label>
+              <input type="email" id="usuarioEmail" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="usuarioPassword">Contraseña *</label>
+              <input type="password" id="usuarioPassword" minlength="6" required>
+            </div>
+            <div class="form-group">
+              <label for="usuarioRol">Rol *</label>
+              <select id="usuarioRol" required>
+                <option value="director_capitulo">Director de Capítulo</option>
+                <option value="director_rama">Director de Rama</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="usuarioCapitulo">Capítulo</label>
+            <input type="text" id="usuarioCapitulo" placeholder="Ej: WIE, RAS, Rama General">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Crear Cuenta</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="usuarioStatus" class="status-message hidden"></div>
+        </form>
+        <h2 class="section-subtitle">Usuarios Registrados</h2>
+        <div id="usuariosList" class="content-list"></div>
+      </section>
+
+      <!-- TAB: Imágenes del Sitio (Rama) -->
+      <section id="site-images" class="tab-content">
+        <h1>Imágenes del Sitio</h1>
+        <p class="empty-state">Cambia las imágenes promocionales de la página web.</p>
+
+        <div class="welcome-cards" id="siteImagesList">
+          <div class="card">
+            <h3>🖼️ Imagen de Portada (Hero)</h3>
+            <p>Imagen principal que aparece en la página de inicio.</p>
+            <div id="heroPreview" class="site-img-preview"></div>
+            <form id="formHeroImage" class="admin-form" data-clave="hero">
+              <div class="form-group">
+                <label for="heroImagen">Nueva imagen</label>
+                <input type="file" id="heroImagen" accept="image/*" required>
+              </div>
+              <div class="form-group">
+                <label for="heroAlt">Texto alternativo</label>
+                <input type="text" id="heroAlt" placeholder="Ej: Actividades IEEE UNMSM 2026">
+              </div>
+              <button type="submit" class="btn-primary">Actualizar Portada</button>
+              <div id="heroStatus" class="status-message hidden"></div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>🏛️ Logo IEEE</h3>
+            <p>Logo que aparece en la barra de navegación.</p>
+            <div id="logoPreview" class="site-img-preview"></div>
+            <form id="formLogoImage" class="admin-form" data-clave="logo">
+              <div class="form-group">
+                <label for="logoImagen">Nueva imagen</label>
+                <input type="file" id="logoImagen" accept="image/*" required>
+              </div>
+              <button type="submit" class="btn-primary">Actualizar Logo</button>
+              <div id="logoStatus" class="status-message hidden"></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: Crear Revista -->
+      <section id="crear-revista" class="tab-content">
+        <h1>Nueva Edición de Revista</h1>
+        <form id="formRevista" class="admin-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="revistaTitulo">Título *</label>
+              <input type="text" id="revistaTitulo" placeholder="Ej: Revista IEEE UNMSM - Mayo 2026" required>
+            </div>
+            <div class="form-group">
+              <label for="revistaEdicion">Número de Edición *</label>
+              <input type="number" id="revistaEdicion" min="1" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="revistaFecha">Fecha de publicación *</label>
+              <input type="date" id="revistaFecha" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="revistaDesc">Descripción</label>
+            <textarea id="revistaDesc" rows="4" placeholder="Resumen del contenido de esta edición..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="revistaPortada">Imagen de portada</label>
+              <input type="file" id="revistaPortada" accept="image/*">
+            </div>
+            <div class="form-group">
+              <label for="revistaPdf">Archivo PDF</label>
+              <input type="file" id="revistaPdf" accept="application/pdf">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Publicar Revista</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="revistaStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+
+      <!-- TAB: Subir Galería -->
+      <section id="subir-galeria" class="tab-content">
+        <h1>Subir Fotos a Galería</h1>
+        <form id="formGaleria" class="admin-form">
+          <div class="form-group">
+            <label for="galeriaCapitulo">Capítulo (opcional)</label>
+            <input type="text" id="galeriaCapitulo" placeholder="Ej: WIE, RAS, EMBS">
+          </div>
+          <div class="form-group">
+            <label for="galeriaEvento">Evento (opcional)</label>
+            <input type="text" id="galeriaEvento" placeholder="Ej: Workshop 2026, Conferencia anual">
+          </div>
+          <div class="form-group">
+            <label for="galeriaFotos">Fotos (máx 20) *</label>
+            <input type="file" id="galeriaFotos" accept="image/*" multiple required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Subir Fotos</button>
+          </div>
+          <div id="galeriaStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="admin.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

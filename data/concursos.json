@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "titulo": "IEEE Student Paper Contest 2026",
+    "convocatoria": "Abierta",
+    "fechaLimite": "2026-06-30",
+    "descripcion": "Presenta tu paper original en cualquier área de ingeniería eléctrica, electrónica o computación. El ganador representa a la UNMSM en la competencia regional.",
+    "requisitos": "Estudiante activo IEEE, trabajo original no publicado.",
+    "link": "#",
+    "bases": "#",
+    "capitulo": "Rama General"
+  },
+  {
+    "id": 2,
+    "titulo": "Concurso de Proyectos Humanitarios SIGHT 2026",
+    "convocatoria": "Próximamente",
+    "fechaLimite": "2026-07-15",
+    "descripcion": "Propón proyectos tecnológicos de impacto social para comunidades vulnerables del Perú.",
+    "requisitos": "Equipo de 2-4 estudiantes IEEE, propuesta de proyecto.",
+    "link": "#",
+    "bases": "#",
+    "capitulo": "SIGHT"
+  },
+  {
+    "id": 3,
+    "titulo": "IEEE ComSoc Student Competition",
+    "convocatoria": "Abierta",
+    "fechaLimite": "2026-05-31",
+    "descripcion": "Competencia internacional en telecomunicaciones y redes. Categorías: investigación y prototipo.",
+    "requisitos": "Miembro activo IEEE ComSoc.",
+    "link": "#",
+    "bases": "#",
+    "capitulo": "ComSoc"
+  }
+]

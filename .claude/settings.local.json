@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:\\\\\\\\Users\\\\\\\\PC\\\\\\\\Desktop\\\\\\\\IEEE_Rama_General_Web\\\\\\\\data\\\\\\\\capitulos.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('C:\\\\\\\\Users\\\\\\\\PC\\\\\\\\Desktop\\\\\\\\IEEE_Rama_General_Web\\\\\\\\data\\\\\\\\noticias.json','utf8'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('C:\\\\\\\\Users\\\\\\\\PC\\\\\\\\Desktop\\\\\\\\IEEE_Rama_General_Web\\\\\\\\data\\\\\\\\concursos.json','utf8'\\)\\); console.log\\('JSONs OK'\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const code=fs.readFileSync\\('js/main.js','utf8'\\); try { new Function\\(code\\); console.log\\('main.js: parse OK \\('+code.length+' chars\\)'\\); } catch\\(e\\) { console.error\\('main.js parse error:', e.message\\); process.exit\\(1\\); }\")",
+      "Bash(curl -s -o /dev/null -w \"index.html       %{http_code}  %{size_download}b\\\\n\" http://localhost:8765/index.html)",
+      "Bash(curl -s -o /dev/null -w \"capitulos.html   %{http_code}  %{size_download}b\\\\n\" http://localhost:8765/capitulos.html)",
+      "Bash(curl -s -o /dev/null -w \"noticias.html    %{http_code}  %{size_download}b\\\\n\" http://localhost:8765/noticias.html)",
+      "Bash(curl -s -o /dev/null -w \"concursos.html   %{http_code}  %{size_download}b\\\\n\" http://localhost:8765/concursos.html)",
+      "Bash(curl -s -o /dev/null -w \"galeria.html     %{http_code}  %{size_download}b\\\\n\" http://localhost:8765/galeria.html)",
+      "Bash(powershell -NoProfile -Command 'Get-NetTCPConnection -LocalPort 8765 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; '\\\\''done'\\\\''')",
+      "Bash(python -m http.server 8765)",
+      "Bash(npx --yes serve . -p 8080)",
+      "Bash(Start-Process \"http://localhost:8080\")",
+      "Bash(cmd.exe /c start http://localhost:8080)",
+      "Bash(cmd.exe /c start http://localhost:64666)",
+      "Bash(node server.js)",
+      "Bash(cmd.exe /c start http://localhost:64666/admin/login.html)",
+      "Bash(npx serve *)",
+      "Bash(node seed.js)"
+    ]
+  }
+}

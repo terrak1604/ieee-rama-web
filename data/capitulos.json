@@ -1,0 +1,162 @@
+[
+  {
+    "id": "wie",
+    "nombre": "IEEE Women in Engineering",
+    "siglas": "WIE",
+    "descripcion": "Promueve la participación y el liderazgo de mujeres en la ingeniería y ciencias a través de programas de mentoría, talleres y redes de apoyo.",
+    "color": "#e91e8c",
+    "icono": "♀",
+    "imagen": "images/capitulos/wie.jpg",
+    "link": "#wie"
+  },
+  {
+    "id": "ras",
+    "nombre": "IEEE Robotics and Automation Society",
+    "siglas": "RAS",
+    "descripcion": "Avanza la teoría y práctica de robótica, automatización y sistemas inteligentes con aplicaciones industriales y de investigación.",
+    "color": "#e53935",
+    "icono": "🤖",
+    "imagen": "images/capitulos/ras.jpg",
+    "link": "#ras"
+  },
+  {
+    "id": "embs",
+    "nombre": "IEEE Engineering in Medicine and Biology Society",
+    "siglas": "EMBS",
+    "descripcion": "Aplica principios de ingeniería y tecnología a las ciencias biológicas y médicas para mejorar la salud humana.",
+    "color": "#00897b",
+    "icono": "🏥",
+    "imagen": "images/capitulos/embs.jpg",
+    "link": "#embs"
+  },
+  {
+    "id": "pes",
+    "nombre": "IEEE Power and Energy Society",
+    "siglas": "PES",
+    "descripcion": "Lidera el desarrollo de sistemas de energía eléctrica sostenibles, incluyendo energías renovables y redes inteligentes.",
+    "color": "#f9a825",
+    "icono": "⚡",
+    "imagen": "images/capitulos/pes.jpg",
+    "link": "#pes"
+  },
+  {
+    "id": "ias",
+    "nombre": "IEEE Industry Applications Society",
+    "siglas": "IAS",
+    "descripcion": "Fomenta el desarrollo y la aplicación de la tecnología eléctrica e informática en la industria.",
+    "color": "#6d4c41",
+    "icono": "🏭",
+    "imagen": "images/capitulos/ias.jpg",
+    "link": "#ias"
+  },
+  {
+    "id": "cs",
+    "nombre": "IEEE Computer Society",
+    "siglas": "CS",
+    "descripcion": "La principal organización mundial dedicada a la tecnología y la ciencia de la computación. Recursos, certificaciones y comunidad global.",
+    "color": "#1565c0",
+    "icono": "💻",
+    "imagen": "images/capitulos/cs.jpg",
+    "link": "#cs"
+  },
+  {
+    "id": "comsoc",
+    "nombre": "IEEE Communications Society",
+    "siglas": "ComSoc",
+    "descripcion": "Avanza las tecnologías de comunicación y conectividad, desde redes inalámbricas hasta comunicaciones ópticas.",
+    "color": "#00838f",
+    "icono": "📡",
+    "imagen": "images/capitulos/comsoc.jpg",
+    "link": "#comsoc"
+  },
+  {
+    "id": "tems",
+    "nombre": "IEEE Technology and Engineering Management Society",
+    "siglas": "TEMS",
+    "descripcion": "Desarrolla habilidades de gestión tecnológica y liderazgo en ingenieros para la era de la innovación global.",
+    "color": "#4527a0",
+    "icono": "📊",
+    "imagen": "images/capitulos/tems.jpg",
+    "link": "#tems"
+  },
+  {
+    "id": "aess",
+    "nombre": "IEEE Aerospace and Electronic Systems Society",
+    "siglas": "AESS",
+    "descripcion": "Promueve el avance de los sistemas aeroespaciales, electrónicos y de defensa con estándares de ingeniería de alto nivel.",
+    "color": "#283593",
+    "icono": "🚀",
+    "imagen": "images/capitulos/aess.jpg",
+    "link": "#aess"
+  },
+  {
+    "id": "aps",
+    "nombre": "IEEE Antennas and Propagation Society",
+    "siglas": "APS",
+    "descripcion": "Desarrolla conocimiento en antenas, propagación de ondas y técnicas de comunicación electromagnética.",
+    "color": "#558b2f",
+    "icono": "📻",
+    "imagen": "images/capitulos/aps.jpg",
+    "link": "#aps"
+  },
+  {
+    "id": "cis",
+    "nombre": "IEEE Computational Intelligence Society",
+    "siglas": "CIS",
+    "descripcion": "Pionera en inteligencia artificial, redes neuronales, computación evolutiva y sistemas difusos.",
+    "color": "#6a1b9a",
+    "icono": "🧠",
+    "imagen": "images/capitulos/cis.jpg",
+    "link": "#cis"
+  },
+  {
+    "id": "npss",
+    "nombre": "IEEE Nuclear and Plasma Sciences Society",
+    "siglas": "NPSS",
+    "descripcion": "Avanza las ciencias nucleares y de plasma, incluyendo fusión nuclear, detectores de radiación y aceleradores de partículas.",
+    "color": "#d84315",
+    "icono": "⚛️",
+    "imagen": "images/capitulos/npss.jpg",
+    "link": "#npss"
+  },
+  {
+    "id": "eds",
+    "nombre": "IEEE Electron Devices Society",
+    "siglas": "EDS",
+    "descripcion": "Lidera la investigación en dispositivos electrónicos, semiconductores y tecnologías de fabricación de microchips.",
+    "color": "#00695c",
+    "icono": "🔬",
+    "imagen": "images/capitulos/eds.jpg",
+    "link": "#eds"
+  },
+  {
+    "id": "sight",
+    "nombre": "IEEE Special Interest Group on Humanitarian Technology",
+    "siglas": "SIGHT",
+    "descripcion": "Aplica la tecnología para resolver desafíos humanitarios y de desarrollo sostenible en comunidades vulnerables.",
+    "color": "#2e7d32",
+    "icono": "🌍",
+    "imagen": "images/capitulos/sight.jpg",
+    "link": "#sight"
+  },
+  {
+    "id": "sps",
+    "nombre": "IEEE Signal Processing Society",
+    "siglas": "SPS",
+    "descripcion": "Avanza el procesamiento de señales y sus aplicaciones en comunicaciones, audio, imagen, video y aprendizaje automático.",
+    "color": "#0277bd",
+    "icono": "〰️",
+    "imagen": "images/capitulos/sps.jpg",
+    "link": "#sps"
+  },
+  {
+    "id": "cas",
+    "nombre": "IEEE Circuits and Systems Society",
+    "siglas": "CAS",
+    "descripcion": "Promueve el diseño de circuitos integrados, sistemas analógicos/digitales y electrónica de bajo consumo.",
+    "color": "#c62828",
+    "icono": "🔌",
+    "imagen": "images/capitulos/cas.jpg",
+    "link": "#cas"
+  }
+]

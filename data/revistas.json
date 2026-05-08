@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "titulo": "Revista IEEE UNMSM — Edición Inaugural",
+    "descripcion": "Primera edición de nuestra revista mensual. Incluye artículos sobre IA, robótica, y el futuro de la ingeniería en el Perú.",
+    "edicion": 1,
+    "fecha": "2026-05-01",
+    "portada": "images/revistas/edicion-1.jpg",
+    "pdf_link": "#",
+    "estado": "aprobado"
+  }
+]

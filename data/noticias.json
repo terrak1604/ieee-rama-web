@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "titulo": "Convocatoria IEEE Student Paper Contest 2026",
+    "fecha": "2026-05-01",
+    "categoria": "convocatoria",
+    "descripcion": "La Rama Estudiantil IEEE UNMSM invita a todos sus miembros a participar en el concurso de papers estudiantiles. Presentación de trabajos hasta el 30 de junio.",
+    "imagen": "images/noticias/paper-contest.jpg",
+    "link": "#concursos",
+    "destacado": true
+  },
+  {
+    "id": 2,
+    "titulo": "Nuevo Taller: Introducción a la Robótica con ROS",
+    "fecha": "2026-04-28",
+    "categoria": "evento",
+    "descripcion": "El capítulo RAS organiza un taller práctico de 3 días sobre ROS 2 y control de robots móviles. Cupos limitados.",
+    "imagen": "images/noticias/taller-robotica.jpg",
+    "link": "#",
+    "destacado": false
+  },
+  {
+    "id": 3,
+    "titulo": "Charla: IA en Medicina - IEEE EMBS",
+    "fecha": "2026-04-20",
+    "categoria": "charla",
+    "descripcion": "El capítulo EMBS presenta una charla magistral sobre aplicaciones de Inteligencia Artificial en diagnóstico médico.",
+    "imagen": "images/noticias/charla-embs.jpg",
+    "link": "#",
+    "destacado": false
+  },
+  {
+    "id": 4,
+    "titulo": "IEEE WIE: Programa de Mentoría Femenina en STEM",
+    "fecha": "2026-04-15",
+    "categoria": "programa",
+    "descripcion": "Women in Engineering lanza su programa de mentoría 2026 para estudiantes de ingeniería. Inscripciones abiertas.",
+    "imagen": "images/noticias/wie-mentoria.jpg",
+    "link": "#",
+    "destacado": false
+  },
+  {
+    "id": 5,
+    "titulo": "Visita técnica a empresa del sector energético",
+    "fecha": "2026-04-10",
+    "categoria": "actividad",
+    "descripcion": "El capítulo PES organiza visita técnica a instalación de energías renovables en Lima. Plazas disponibles.",
+    "imagen": "images/noticias/visita-pes.jpg",
+    "link": "#",
+    "destacado": false
+  }
+]
