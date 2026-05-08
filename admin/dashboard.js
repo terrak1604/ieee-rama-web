@@ -74,6 +74,10 @@ function switchTab(tabName) {
     loadUsuarios();
   } else if (tabName === 'site-images') {
     loadSiteImagesAdmin();
+  } else if (tabName === 'editar-capitulo') {
+    window.AdminCapitulos?.load();
+  } else if (tabName === 'editor-articulo') {
+    window.AdminEditor?.init();
   }
 }
 

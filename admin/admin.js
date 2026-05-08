@@ -150,6 +150,43 @@ async function uploadGaleria(formData) {
   return data;
 }
 
+async function uploadContenidoArchivos(contenidoId, formData) {
+  const response = await fetch(`${API_BASE_URL}/contenido/${contenidoId}/archivos`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error uploading files');
+  return data;
+}
+
+async function getCapitulos() {
+  return apiCall('/capitulos');
+}
+
+async function getCapitulo(slug) {
+  return apiCall(`/capitulos/${encodeURIComponent(slug)}`);
+}
+
+async function updateCapitulo(slug, payload) {
+  return apiCall(`/capitulos/${encodeURIComponent(slug)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function uploadCapituloArchivo(slug, formData) {
+  const response = await fetch(`${API_BASE_URL}/capitulos/${encodeURIComponent(slug)}/archivos`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error uploading chapter file');
+  return data;
+}
+
 async function getUsuarios() {
   return apiCall('/auth/users');
 }

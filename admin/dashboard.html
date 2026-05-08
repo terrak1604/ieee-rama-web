@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
   <link rel="stylesheet" href="admin-styles.css">
 </head>
 <body>
@@ -34,6 +35,8 @@
 
         <!-- Para directores de capítulo -->
         <div id="directorMenu">
+          <button class="menu-item" data-tab="editar-capitulo">🏛️ Mi Capítulo</button>
+          <button class="menu-item" data-tab="editor-articulo">✍️ Editor</button>
           <button class="menu-item" data-tab="crear-noticia">📝 Nueva Noticia</button>
           <button class="menu-item" data-tab="crear-proyecto">🚀 Nuevo Proyecto</button>
           <button class="menu-item" data-tab="crear-evento">📅 Nuevo Evento</button>
@@ -42,6 +45,8 @@
 
         <!-- Para directores de rama -->
         <div id="ramaMenu" class="hidden">
+          <button class="menu-item" data-tab="editar-capitulo">🏛️ Capítulos</button>
+          <button class="menu-item" data-tab="editor-articulo">✍️ Editor</button>
           <button class="menu-item" data-tab="crear-noticia">📝 Nuevo Anuncio</button>
           <button class="menu-item" data-tab="pendientes">⏳ Pendientes Aprobación</button>
           <button class="menu-item" data-tab="contenido-publicado">✅ Contenido Publicado</button>
@@ -73,6 +78,70 @@
       </section>
 
       <!-- TAB: Crear Noticia -->
+      <section id="editar-capitulo" class="tab-content">
+        <h1>Gestión de Capítulos</h1>
+        <div id="capitulosAdminList" class="content-list"></div>
+      </section>
+
+      <section id="editor-articulo" class="tab-content">
+        <h1>Editor de Artículos</h1>
+        <form id="formEditorArticulo" class="admin-form admin-form-wide">
+          <div class="editor-grid">
+            <div>
+              <div class="form-group">
+                <label for="editorTipo">Tipo *</label>
+                <select id="editorTipo" required>
+                  <option value="noticia">Noticia</option>
+                  <option value="proyecto">Proyecto</option>
+                  <option value="evento">Evento</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editorTitulo">Título *</label>
+                <input type="text" id="editorTitulo" required>
+              </div>
+              <div class="form-group">
+                <label for="editorCapitulo">Capítulo</label>
+                <select id="editorCapitulo"></select>
+              </div>
+              <div class="form-group">
+                <label for="editorExtracto">Extracto *</label>
+                <textarea id="editorExtracto" rows="5" required></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="editorLugar">Lugar</label>
+                  <input type="text" id="editorLugar">
+                </div>
+                <div class="form-group">
+                  <label for="editorFechaEvento">Fecha evento</label>
+                  <input type="datetime-local" id="editorFechaEvento">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="editorImagen">Imagen destacada</label>
+                <input type="file" id="editorImagen" accept="image/*">
+              </div>
+            </div>
+            <div>
+              <label class="editor-label">Cuerpo</label>
+              <div id="quillEditor"></div>
+            </div>
+          </div>
+          <div id="dropAdjuntos" class="drop-zone" tabindex="0">
+            <strong>Arrastra imágenes o PDFs</strong>
+            <span>También puedes hacer clic para seleccionar hasta 10 archivos.</span>
+            <input type="file" id="editorAdjuntos" accept="image/*,application/pdf" multiple hidden>
+          </div>
+          <div id="adjuntosPreview" class="attachments-preview"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Guardar Artículo</button>
+            <button type="reset" class="btn-outline">Limpiar</button>
+          </div>
+          <div id="editorStatus" class="status-message hidden"></div>
+        </form>
+      </section>
+
       <section id="crear-noticia" class="tab-content">
         <h1>Nueva Noticia</h1>
         <form id="formNoticia" class="admin-form">
@@ -357,7 +426,64 @@
     </main>
   </div>
 
+  <div id="capituloModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="capituloModalTitle">
+    <div class="modal-panel">
+      <button id="closeCapituloModal" class="modal-close" aria-label="Cerrar">×</button>
+      <h2 id="capituloModalTitle">Editar Capítulo</h2>
+      <form id="formCapituloEditor" class="admin-form">
+        <input type="hidden" id="capituloSlug">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="capituloNombre">Nombre</label>
+            <input type="text" id="capituloNombre">
+          </div>
+          <div class="form-group">
+            <label for="capituloSiglas">Siglas</label>
+            <input type="text" id="capituloSiglas">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="capituloDescCorta">Descripción corta</label>
+          <textarea id="capituloDescCorta" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="capituloDescLarga">Descripción larga</label>
+          <textarea id="capituloDescLarga" rows="5"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="capituloMision">Misión</label>
+            <textarea id="capituloMision" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="capituloVision">Visión</label>
+            <textarea id="capituloVision" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="capituloLogo">Reemplazar logo</label>
+            <input type="file" id="capituloLogo" accept="image/*">
+          </div>
+          <div class="form-group">
+            <label for="capituloPortada">Reemplazar portada</label>
+            <input type="file" id="capituloPortada" accept="image/*">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Guardar Capítulo</button>
+          <button type="button" id="cancelCapituloModal" class="btn-outline">Cancelar</button>
+        </div>
+        <div id="capituloStatus" class="status-message hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
   <script src="admin.js"></script>
   <script src="dashboard.js"></script>
+  <script src="js/admin-capitulos.js"></script>
+  <script src="js/admin-editor.js"></script>
+  <script src="js/admin-dashboard.js"></script>
 </body>
 </html>
