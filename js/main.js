@@ -5,6 +5,7 @@
 
 const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000/api';
 const UPLOADS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+const IEEE_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 fill=%22%2300629B%22/%3E%3Ctext x=%22600%22 y=%22320%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%22116%22 font-weight=%22700%22 fill=%22white%22%3EIEEE%3C/text%3E%3Ctext x=%22600%22 y=%22405%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%2238%22 fill=%22white%22%3ERama Estudiantil UNMSM%3C/text%3E%3C/svg%3E';
 
 // ════════════════════════════════════════════════════════
 //  SISTEMA DE PARTÍCULAS AVANZADO – Capa 1: particles.js
@@ -363,6 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProyectos();
   loadConcursos();
   loadRevistas();
+  loadCapituloDetalle();
+  loadContenidoDetalle();
   initGaleria();
   initLightbox();
   initContactForm();
@@ -539,6 +542,15 @@ function resolveImageUrl(imagePath) {
   return p; // ruta local relativa como images/noticias/xxx.jpg
 }
 
+function contentDetailLink(item, fallback = '#') {
+  return item.slug ? `contenido-detalle.html?slug=${encodeURIComponent(item.slug)}` : (item.link || fallback);
+}
+
+function chapterDetailLink(item) {
+  const slug = item.slug || item.id;
+  return slug ? `capitulo-detalle.html?slug=${encodeURIComponent(slug)}` : (item.link || '#');
+}
+
 // ── Carga de imágenes del sitio (hero, logo) ──
 async function loadSiteImages() {
   try {
@@ -628,13 +640,13 @@ function createRevistaCard(r) {
 }
 
 function createCapituloCard(cap) {
-  const id = escapeHTML(cap.id);
+  const id = escapeHTML(cap.id || cap.slug);
   const color = sanitizeColor(cap.color);
   const siglas = escapeHTML(cap.siglas);
   const nombre = escapeHTML(cap.nombre);
-  const descripcion = escapeHTML(cap.descripcion);
-  const icono = escapeHTML(cap.icono);
-  const link = escapeAttribute(cap.link || '#');
+  const descripcion = escapeHTML(cap.descripcion || cap.descripcion_corta);
+  const icono = escapeHTML(cap.icono || cap.siglas || 'IEEE');
+  const link = escapeAttribute(chapterDetailLink(cap));
 
   return `
   <div class="capitulo-card" data-cap="${id}">
@@ -681,12 +693,13 @@ async function loadNoticias() {
     // Convertir datos de API al formato esperado si es necesario
     noticias = noticias.map(n => ({
       id: n.id || Math.random(),
+      slug: n.slug,
       titulo: n.titulo,
       fecha: n.created_at || n.fecha,
       categoria: n.categoria || 'noticia',
       descripcion: n.descripcion,
       imagen: n.imagen_path || 'placeholder.jpg',
-      link: n.link || '#',
+      link: contentDetailLink(n),
       destacado: false
     }));
 
@@ -759,11 +772,12 @@ async function loadProyectos() {
     // Convertir datos de API al formato esperado
     proyectos = proyectos.map(p => ({
       id: p.id || Math.random(),
+      slug: p.slug,
       titulo: p.titulo,
       fecha: p.created_at || p.fecha,
       descripcion: p.descripcion,
       imagen: p.imagen_path || p.imagen || null,
-      link: p.link || '#',
+      link: contentDetailLink(p),
       capitulo: p.capitulo || 'General'
     }));
 
@@ -879,12 +893,13 @@ async function loadConcursos() {
     // Convertir datos de API al formato esperado si es necesario
     concursos = concursos.map(c => ({
       id: c.id || Math.random(),
+      slug: c.slug,
       titulo: c.titulo,
       fechaLimite: c.fecha_evento || c.fechaLimite,
       descripcion: c.descripcion,
       requisitos: c.requisitos || '',
       imagen: c.imagen_path || c.imagen || null,
-      link: c.link || '#',
+      link: contentDetailLink(c),
       bases: c.bases || '#',
       capitulo: c.capitulo || 'Rama General',
       convocatoria: c.estado === 'aprobado' ? 'Abierta' : 'Próximamente'
@@ -959,10 +974,153 @@ function createConcursoCard(c, full = false) {
     ${requisitos}
     <div class="concurso-fecha">⏰ Fecha límite: ${fechaStr}</div>
     <div class="concurso-actions">
-      <a href="${link}" class="btn btn-primary btn-sm">Participar</a>
+      <a href="${link}" class="btn btn-primary btn-sm">Leer más</a>
       <a href="${bases}" class="btn btn-outline btn-sm">Ver bases</a>
     </div>
   </div>`;
+}
+
+async function loadCapituloDetalle() {
+  const root = document.getElementById('capitulo-detail-root');
+  if (!root) return;
+
+  const slug = new URLSearchParams(window.location.search).get('slug');
+  if (!slug) {
+    root.innerHTML = '<section><div class="container"><p class="no-results">No se indicó un capítulo.</p></div></section>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/capitulos/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error('Capitulo not found');
+    const capitulo = await res.json();
+    const color = sanitizeColor(capitulo.color, '#00629B');
+    const portada = resolveImageUrl(capitulo.imagen_portada_path) || IEEE_FALLBACK_IMAGE;
+    const logo = resolveImageUrl(capitulo.logo_path) || IEEE_FALLBACK_IMAGE;
+    const contenidos = capitulo.contenidos || [];
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const canEdit = user && (user.rol === 'director_rama' || (user.rol === 'director_capitulo' && user.capitulo === capitulo.slug));
+
+    const grouped = {
+      noticia: contenidos.filter(item => item.tipo === 'noticia'),
+      proyecto: contenidos.filter(item => item.tipo === 'proyecto'),
+      evento: contenidos.filter(item => item.tipo === 'evento'),
+    };
+
+    root.innerHTML = `
+      <header class="chapter-hero" style="--chapter-color:${color};background-image:linear-gradient(90deg, rgba(0,20,45,.92), rgba(0,40,85,.72)), url('${escapeAttribute(portada)}')">
+        <div class="container chapter-hero-inner">
+          <img src="${escapeAttribute(logo)}" alt="${escapeHTML(capitulo.nombre)}" class="chapter-logo" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
+          <div>
+            <nav class="breadcrumb" aria-label="Ruta de navegación">
+              <a href="index.html">Inicio</a><span class="sep">›</span><a href="capitulos.html">Capítulos</a><span class="sep">›</span><span>${escapeHTML(capitulo.siglas)}</span>
+            </nav>
+            <h1 class="page-title">${escapeHTML(capitulo.nombre)}</h1>
+            <p class="page-subtitle">${escapeHTML(capitulo.descripcion_larga || capitulo.descripcion_corta || '')}</p>
+            ${canEdit ? '<a class="btn btn-primary btn-sm" href="admin/dashboard.html">Editar Capítulo</a>' : ''}
+          </div>
+        </div>
+      </header>
+      <section>
+        <div class="container detail-layout">
+          <article class="detail-main">
+            <div class="tabs" data-tabs>
+              <button class="chip active" data-tab="noticia">Noticias</button>
+              <button class="chip" data-tab="proyecto">Proyectos</button>
+              <button class="chip" data-tab="evento">Eventos</button>
+            </div>
+            <div id="chapter-tab-content"></div>
+          </article>
+          <aside class="detail-sidebar">
+            <h2>Directiva</h2>
+            <p>${escapeHTML(capitulo.director_id ? `Director ID ${capitulo.director_id}` : 'Directiva por actualizar')}</p>
+            <h2>Misión</h2>
+            <p>${escapeHTML(capitulo.mision || 'Información por actualizar.')}</p>
+            <h2>Visión</h2>
+            <p>${escapeHTML(capitulo.vision || 'Información por actualizar.')}</p>
+          </aside>
+        </div>
+      </section>`;
+
+    const tabContent = document.getElementById('chapter-tab-content');
+    const renderTab = (type) => {
+      const items = grouped[type] || [];
+      tabContent.innerHTML = items.length
+        ? `<div class="noticias-grid full">${items.map(item => createNoticiaCard({
+            ...item,
+            fecha: item.publicado_at || item.created_at,
+            categoria: item.tipo,
+            imagen: item.imagen_path,
+            link: contentDetailLink(item),
+          }, false)).join('')}</div>`
+        : '<p class="no-results">No hay contenido publicado en esta sección.</p>';
+    };
+
+    root.querySelectorAll('[data-tab]').forEach(button => {
+      button.addEventListener('click', () => {
+        root.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        renderTab(button.dataset.tab);
+      });
+    });
+    renderTab('noticia');
+  } catch (err) {
+    root.innerHTML = '<section><div class="container"><p class="no-results">No se pudo cargar el capítulo.</p></div></section>';
+  }
+}
+
+async function loadContenidoDetalle() {
+  const root = document.getElementById('contenido-detail-root');
+  if (!root) return;
+
+  const slug = new URLSearchParams(window.location.search).get('slug');
+  if (!slug) {
+    root.innerHTML = '<section><div class="container"><p class="no-results">No se indicó un contenido.</p></div></section>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/contenido/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error('Contenido not found');
+    const item = await res.json();
+    const fecha = safeParseDate(item.fecha_evento || item.publicado_at || item.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+    const hero = resolveImageUrl(item.imagen_path) || IEEE_FALLBACK_IMAGE;
+    const archivos = item.archivos || [];
+    const imagenes = archivos.filter(file => file.tipo === 'imagen');
+    const documentos = archivos.filter(file => file.tipo === 'documento');
+
+    root.innerHTML = `
+      <header class="page-header article-header">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="Ruta de navegación">
+            <a href="index.html">Inicio</a><span class="sep">›</span><span>${escapeHTML(item.tipo)}</span>
+          </nav>
+          <div class="article-tags">
+            <span>${escapeHTML(item.tipo)}</span>
+            <span>${escapeHTML(item.capitulo || 'Rama IEEE')}</span>
+            <span>${fecha}</span>
+          </div>
+          <h1 class="page-title">${escapeHTML(item.titulo)}</h1>
+          <p class="page-subtitle">${escapeHTML(item.extracto || item.descripcion || '')}</p>
+        </div>
+      </header>
+      <section>
+        <div class="container article-layout">
+          <article class="article-content">
+            <img src="${escapeAttribute(hero)}" alt="${escapeHTML(item.titulo)}" class="article-featured" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
+            <div class="article-body">${item.cuerpo || `<p>${escapeHTML(item.descripcion || '')}</p>`}</div>
+            ${imagenes.length ? `<h2>Galería</h2><div class="article-gallery">${imagenes.map(file => `
+              <img src="${escapeAttribute(resolveImageUrl(file.archivo_path) || IEEE_FALLBACK_IMAGE)}" alt="${escapeHTML(file.caption || file.nombre_original || item.titulo)}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
+            `).join('')}</div>` : ''}
+            ${documentos.length ? `<h2>Documentos</h2><div class="document-list">${documentos.map(file => `
+              <a href="${escapeAttribute(resolveImageUrl(file.archivo_path) || '#')}" target="_blank" rel="noopener">${escapeHTML(file.nombre_original || 'Documento adjunto')}</a>
+            `).join('')}</div>` : ''}
+          </article>
+        </div>
+      </section>`;
+  } catch (err) {
+    root.innerHTML = '<section><div class="container"><p class="no-results">No se pudo cargar el contenido.</p></div></section>';
+  }
 }
 
 // ── Galería (carga dinámica desde API + fallback) ──
