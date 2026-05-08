@@ -467,6 +467,7 @@ async function loadCapitulos() {
   if (!container) return;
   const mode  = container.dataset.mode  || 'preview';
   const limit = parseInt(container.dataset.limit || '6', 10);
+  renderSkeletonCards(container, mode === 'full' ? 8 : limit);
   try {
     const res = await fetch('data/capitulos.json');
     const capitulos = await res.json();
@@ -542,6 +543,18 @@ function resolveImageUrl(imagePath) {
   return p; // ruta local relativa como images/noticias/xxx.jpg
 }
 
+function renderSkeletonCards(container, count = 3) {
+  if (!container) return;
+  container.innerHTML = Array.from({ length: count }, () => `
+    <div class="content-skeleton-card">
+      <div class="content-skeleton-media"></div>
+      <div class="content-skeleton-line wide"></div>
+      <div class="content-skeleton-line"></div>
+      <div class="content-skeleton-line short"></div>
+    </div>
+  `).join('');
+}
+
 function contentDetailLink(item, fallback = '#') {
   return item.slug ? `contenido-detalle.html?slug=${encodeURIComponent(item.slug)}` : (item.link || fallback);
 }
@@ -563,12 +576,15 @@ async function loadSiteImages() {
       if (img.clave === 'hero') {
         const wrapper = document.getElementById('hero-img-wrapper');
         if (wrapper) {
-          wrapper.innerHTML = `<img src="${escapeAttribute(url)}" alt="${escapeHTML(img.alt_text || 'IEEE UNMSM')}" class="hero-real-img">`;
+          wrapper.innerHTML = `<img src="${escapeAttribute(url)}" alt="${escapeHTML(img.alt_text || 'IEEE UNMSM')}" class="hero-real-img" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">`;
         }
       }
       if (img.clave === 'logo') {
         const logoEl = document.querySelector('.nav-logo-img');
-        if (logoEl) logoEl.src = url;
+        if (logoEl) {
+          logoEl.src = url;
+          logoEl.onerror = () => { logoEl.src = IEEE_FALLBACK_IMAGE; };
+        }
       }
     });
   } catch (e) {
@@ -581,6 +597,7 @@ async function loadRevistas() {
   const container = document.getElementById('revistas-container');
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
+  renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
     let revistas = [];
     try {
@@ -622,7 +639,7 @@ function createRevistaCard(r) {
   <div class="revista-card">
     <div class="revista-portada">
       ${portadaUrl
-        ? `<img src="${escapeAttribute(portadaUrl)}" alt="${titulo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        ? `<img src="${escapeAttribute(portadaUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">`
         : ''}
       <div class="revista-portada-placeholder" ${portadaUrl ? 'style="display:none"' : ''}>
         <span>📰</span>
@@ -672,6 +689,7 @@ async function loadNoticias() {
   const container = document.getElementById('noticias-container');
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
+  renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
     // Intentar cargar desde API primero
     let noticias = [];
@@ -752,6 +770,7 @@ async function loadProyectos() {
   const container = document.getElementById('proyectos-container');
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
+  renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
     // Intentar cargar desde API primero
     let proyectos = [];
@@ -816,7 +835,7 @@ function createProyectoCard(p) {
   return `
   <div class="proyecto-card">
     <div class="proyecto-img">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
       <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
         <span class="img-icon">🚀</span>
         <span class="img-text">Proyecto: ${titulo}</span>
@@ -847,7 +866,7 @@ function createNoticiaCard(n, destacada) {
   return `
   <div class="noticia-card${destacada ? ' destacada' : ''}">
     <div class="noticia-img">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
       <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
         <span class="img-icon">🖼️</span>
         <span class="img-text">${titulo}</span>
@@ -872,6 +891,7 @@ async function loadConcursos() {
   const container = document.getElementById('concursos-container');
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
+  renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
     // Intentar cargar desde API primero (tipo=evento)
     let concursos = [];
@@ -954,7 +974,7 @@ function createConcursoCard(c, full = false) {
   const imgUrl = resolveImageUrl(c.imagen);
   const imgSection = imgUrl ? `
     <div class="concurso-img">
-      <img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.parentElement.style.display='none'">
+      <img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
     </div>` : '';
   const meta = full ? `
     <div class="concurso-meta-row">
@@ -1129,6 +1149,7 @@ async function initGaleria() {
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
   if (mode === 'full') container.classList.add('full');
+  renderSkeletonCards(container, mode === 'full' ? 9 : 4);
 
   let fotos = [];
   try {
@@ -1152,7 +1173,7 @@ async function initGaleria() {
     const label = escapeHTML(foto.evento || foto.capitulo || 'Foto IEEE');
     return `
     <div class="galeria-item${i === 0 ? ' large' : ''}" data-idx="${i}" data-label="${escapeAttribute(label)}" data-src="${escapeAttribute(imgUrl || '')}">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${label}" loading="lazy">` : '<span class="galeria-icon">🖼️</span>'}
+      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${label}" loading="lazy" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : '<span class="galeria-icon">🖼️</span>'}
       <span class="galeria-overlay">${label}</span>
     </div>`;
   }).join('');
@@ -1235,7 +1256,7 @@ function initLightbox() {
     const label = item.dataset.label || 'Foto IEEE';
     const src = item.dataset.src;
     if (src) {
-      imgWrap.innerHTML = `<img src="${escapeAttribute(src)}" alt="${escapeHTML(label)}">`;
+      imgWrap.innerHTML = `<img src="${escapeAttribute(src)}" alt="${escapeHTML(label)}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">`;
     } else {
       imgWrap.innerHTML = `<span class="galeria-placeholder-icon">🖼️</span><p class="galeria-placeholder-text">Imagen aún no agregada</p>`;
     }
