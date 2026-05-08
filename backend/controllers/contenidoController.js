@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sanitizeHtml, uniqueSlug, normalizeChapterForUser } = require('../utils/editorial');
 
 // GET contenido (con filtros)
 const getContenido = (req, res) => {
@@ -33,6 +34,36 @@ const getContenido = (req, res) => {
   db.all(query, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows || []);
+  });
+};
+
+// GET detalle publico por slug
+const getContenidoBySlug = (req, res) => {
+  const query = `
+    SELECT c.*, u.nombre as autor_usuario
+    FROM contenido c
+    JOIN usuarios u ON c.autor_id = u.id
+    WHERE c.slug = ? AND c.estado = 'aprobado'
+  `;
+
+  db.get(query, [req.params.slug], (err, contenido) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!contenido) return res.status(404).json({ error: 'Contenido not found' });
+
+    db.run('UPDATE contenido SET vistas = COALESCE(vistas, 0) + 1 WHERE id = ?', [contenido.id]);
+
+    db.all(
+      'SELECT * FROM contenido_archivos WHERE contenido_id = ? ORDER BY orden ASC, id ASC',
+      [contenido.id],
+      (filesErr, archivos) => {
+        if (filesErr) return res.status(500).json({ error: filesErr.message });
+        res.json({
+          ...contenido,
+          vistas: Number(contenido.vistas || 0) + 1,
+          archivos: archivos || [],
+        });
+      }
+    );
   });
 };
 
@@ -73,11 +104,13 @@ const getMisContenido = (req, res) => {
 };
 
 // CREATE contenido
-const createContenido = (req, res) => {
+const createContenido = async (req, res) => {
   const {
     tipo,
     titulo,
     descripcion,
+    cuerpo,
+    extracto,
     categoria,
     capitulo,
     fecha_evento,
@@ -86,29 +119,58 @@ const createContenido = (req, res) => {
   } = req.body;
   const autorId = req.user.id;
   const imagen_path = req.file ? `/uploads/${req.file.filename}` : null;
+  const safeCapitulo = normalizeChapterForUser(req.user, capitulo);
+  const safeHtml = sanitizeHtml(cuerpo || descripcion || '');
 
   // Director de rama publica directo; capítulos pasan por aprobación.
   const estado = req.user.rol === 'director_rama' ? 'aprobado' : 'pendiente_aprobacion';
+  const publicadoAt = estado === 'aprobado' ? new Date().toISOString() : null;
 
   if (!tipo || !titulo || !descripcion) {
     return res.status(400).json({ error: 'tipo, titulo, descripcion required' });
   }
 
+  let slug;
+  try {
+    slug = await uniqueSlug(db, 'contenido', titulo);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
   const query = `
     INSERT INTO contenido 
-    (tipo, titulo, descripcion, autor_id, capitulo, estado, imagen_path, categoria, fecha_evento, lugar, link)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (tipo, titulo, slug, descripcion, cuerpo, extracto, autor_id, autor_nombre, capitulo, estado,
+     imagen_path, categoria, fecha_evento, lugar, link, publicado_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.run(
     query,
-    [tipo, titulo, descripcion, autorId, capitulo, estado, imagen_path, categoria, fecha_evento, lugar, link],
+    [
+      tipo,
+      titulo,
+      slug,
+      descripcion,
+      safeHtml,
+      extracto || descripcion,
+      autorId,
+      req.user.nombre,
+      safeCapitulo,
+      estado,
+      imagen_path,
+      categoria,
+      fecha_evento,
+      lugar,
+      link,
+      publicadoAt,
+    ],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
 
       res.status(201).json({
         message: 'Contenido created successfully',
         id: this.lastID,
+        slug,
       });
     }
   );
@@ -120,7 +182,10 @@ const aprobarContenido = (req, res) => {
   const { comentario } = req.body;
   const aprobadoPor = req.user.id;
 
-  db.run('UPDATE contenido SET estado = ? WHERE id = ?', ['aprobado', id], function (err) {
+  db.run(
+    'UPDATE contenido SET estado = ?, publicado_at = COALESCE(publicado_at, CURRENT_TIMESTAMP) WHERE id = ?',
+    ['aprobado', id],
+    function (err) {
     if (err) return res.status(500).json({ error: err.message });
 
     db.run(
@@ -131,7 +196,8 @@ const aprobarContenido = (req, res) => {
         res.json({ message: 'Contenido approved' });
       }
     );
-  });
+    }
+  );
 };
 
 // REJECT contenido
@@ -155,23 +221,41 @@ const rechazarContenido = (req, res) => {
 };
 
 // UPDATE contenido (solo autor)
-const updateContenido = (req, res) => {
+const updateContenido = async (req, res) => {
   const { id } = req.params;
-  const { titulo, descripcion, categoria, lugar, fecha_evento } = req.body;
+  const { titulo, descripcion, cuerpo, extracto, categoria, lugar, fecha_evento, capitulo } = req.body;
   const autorId = req.user.id;
 
-  db.get('SELECT * FROM contenido WHERE id = ? AND autor_id = ?', [id, autorId], (err, row) => {
+  db.get('SELECT * FROM contenido WHERE id = ?', [id], async (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(403).json({ error: 'Cannot edit this content' });
+    if (!row) return res.status(404).json({ error: 'Contenido not found' });
+    if (req.user.rol !== 'director_rama' && Number(row.autor_id) !== Number(autorId)) {
+      return res.status(403).json({ error: 'Cannot edit this content' });
+    }
+
+    const safeCapitulo = normalizeChapterForUser(req.user, capitulo || row.capitulo);
+    const safeHtml = typeof cuerpo === 'undefined' ? row.cuerpo : sanitizeHtml(cuerpo);
+    let slug = row.slug;
+
+    if (titulo && titulo !== row.titulo) {
+      try {
+        slug = await uniqueSlug(db, 'contenido', titulo, row.id);
+      } catch (slugErr) {
+        return res.status(500).json({ error: slugErr.message });
+      }
+    }
 
     db.run(
       `UPDATE contenido 
-       SET titulo = ?, descripcion = ?, categoria = ?, lugar = ?, fecha_evento = ?, updated_at = CURRENT_TIMESTAMP 
+       SET titulo = COALESCE(?, titulo), slug = ?, descripcion = COALESCE(?, descripcion),
+           cuerpo = ?, extracto = COALESCE(?, extracto), categoria = COALESCE(?, categoria),
+           lugar = COALESCE(?, lugar), fecha_evento = COALESCE(?, fecha_evento),
+           capitulo = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [titulo, descripcion, categoria, lugar, fecha_evento, id],
+      [titulo, slug, descripcion, safeHtml, extracto, categoria, lugar, fecha_evento, safeCapitulo, id],
       (err) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Contenido updated' });
+        res.json({ message: 'Contenido updated', slug });
       }
     );
   });
@@ -195,6 +279,7 @@ const deleteContenido = (req, res) => {
 
 module.exports = {
   getContenido,
+  getContenidoBySlug,
   getPendientes,
   getMisContenido,
   createContenido,

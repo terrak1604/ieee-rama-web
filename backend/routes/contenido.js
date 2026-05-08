@@ -5,6 +5,7 @@ const path = require('path');
 const { authMiddleware, optionalAuthMiddleware, roleMiddleware } = require('../middleware/auth');
 const {
   getContenido,
+  getContenidoBySlug,
   getPendientes,
   getMisContenido,
   createContenido,
@@ -13,6 +14,11 @@ const {
   updateContenido,
   deleteContenido,
 } = require('../controllers/contenidoController');
+const {
+  uploadContenidoArchivos,
+  deleteContenidoArchivo,
+} = require('../controllers/archivoController');
+const { contentUpload, validateContentFiles } = require('../middleware/upload');
 
 // Multer config para uploads
 const storage = multer.diskStorage({
@@ -43,11 +49,18 @@ router.get('/mis-contenidos/:autorId', authMiddleware, getMisContenido);
 // GET pendientes de aprobación (solo director de rama)
 router.get('/pendientes', authMiddleware, roleMiddleware(['director_rama']), getPendientes);
 
+// GET detalle publico por slug
+router.get('/:slug', getContenidoBySlug);
+
 // CREATE contenido (autenticado)
 router.post('/', authMiddleware, upload.single('imagen'), createContenido);
 
 // UPDATE contenido (solo autor)
 router.patch('/:id', authMiddleware, updateContenido);
+
+// Upload adjuntos editoriales
+router.post('/:id/archivos', authMiddleware, contentUpload, validateContentFiles, uploadContenidoArchivos);
+router.delete('/:id/archivos/:archivoId', authMiddleware, deleteContenidoArchivo);
 
 // DELETE contenido (solo autor)
 router.delete('/:id', authMiddleware, deleteContenido);

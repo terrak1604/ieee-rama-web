@@ -7,6 +7,7 @@ const db = require('./config/db');
 
 const authRoutes = require('./routes/auth');
 const contenidoRoutes = require('./routes/contenido');
+const capitulosRoutes = require('./routes/capitulos');
 const galeriaRoutes = require('./routes/galeria');
 const siteImagesRoutes = require('./routes/siteImages');
 const revistasRoutes = require('./routes/revistas');
@@ -40,12 +41,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Servir archivos estáticos (uploads)
-app.use('/uploads', express.static('uploads'));
-app.use('/uploads/galeria', express.static('uploads/galeria'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/contenido', contenidoRoutes);
+app.use('/api/capitulos', capitulosRoutes);
 app.use('/api/galeria', galeriaRoutes);
 app.use('/api/site-images', siteImagesRoutes);
 app.use('/api/revistas', revistasRoutes);
@@ -74,6 +75,7 @@ app.listen(PORT, () => {
   console.log(`   - POST   /api/auth/login`);
   console.log(`   - POST   /api/auth/register`);
   console.log(`   - GET    /api/contenido`);
+  console.log(`   - GET    /api/capitulos`);
   console.log(`   - POST   /api/contenido`);
   console.log(`   - GET    /api/contenido/pendientes`);
   console.log(`   - POST   /api/contenido/:id/aprobar`);
