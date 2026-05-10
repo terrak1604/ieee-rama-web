@@ -17,7 +17,10 @@ const contactoRoutes = require('./routes/contacto');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
+}));
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 200, message: 'Demasiadas solicitudes.' });
 app.use('/api', generalLimiter);
 
@@ -70,16 +73,35 @@ app.use('/api/revistas', revistasRoutes);
 app.use('/api/contacto', contactoRoutes);
 
 // === Panel admin estático ===
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..');
 app.use('/admin', express.static(path.join(ROOT, 'admin'), {
   extensions: ['html'],
 }));
 
-// === Frontend público estático (multi-página) ===
-app.use(express.static(ROOT, {
-  index: 'index.html',
-  extensions: ['html'],
-}));
+// === Assets estáticos (CSS, JS, imágenes, data) ===
+app.use('/css',    express.static(path.join(ROOT, 'css')));
+app.use('/js',     express.static(path.join(ROOT, 'js')));
+app.use('/images', express.static(path.join(ROOT, 'images')));
+app.use('/data',   express.static(path.join(ROOT, 'data')));
+
+// === Páginas HTML públicas (rutas explícitas) ===
+const pages = [
+  ['/',                  'index.html'],
+  ['/capitulos',         'capitulos.html'],
+  ['/noticias',          'noticias.html'],
+  ['/proyectos',         'proyectos.html'],
+  ['/concursos',         'concursos.html'],
+  ['/galeria',           'galeria.html'],
+  ['/contacto',          'contacto.html'],
+  ['/calendario',        'calendario.html'],
+  ['/revista',           'revista.html'],
+  ['/resultados',        'resultados.html'],
+  ['/capitulo-detalle',  'capitulo-detalle.html'],
+  ['/contenido-detalle', 'contenido-detalle.html'],
+];
+pages.forEach(([route, file]) => {
+  app.get(route, (req, res) => res.sendFile(path.join(ROOT, file)));
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -4,6 +4,20 @@
 
 ---
 
+[2026-05-10 06:50]
+- Bloque D: Páginas de detalle dinámicas.
+  capitulo-detalle.html: hero con logo/sigla, descripción, sidebar de info+redes,
+  publicaciones recientes del capítulo desde la API, Open Graph dinámico.
+  contenido-detalle.html: artículo unificado (noticia/proyecto/evento), hero con
+  imagen de fondo, breadcrumb, extracto destacado, sidebar de detalles específicos
+  por tipo (fecha_evento, lugar, estado_proyecto), barra de compartir
+  (copiar enlace, WhatsApp, Twitter), Open Graph dinámico.
+  server.js: rutas /capitulo-detalle y /contenido-detalle añadidas.
+  main.js: updateOpenGraph(), renderShareBar(), loadCapituloDetalle(),
+  loadContenidoDetalle() implementadas.
+
+---
+
 [2026-05-10 06:45]
 - Bloque C: Pulido visual base.
   Tokens CSS: escala de espaciado 8px (--space-1 … --space-9) y tipografía Major Third

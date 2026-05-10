@@ -1718,6 +1718,252 @@ document.addEventListener('DOMContentLoaded', () => {
   initParticles();
   initScrollAnimations();
   
+
+// ════════════════════════════════════════════════════════
+//  BLOQUE D — PÁGINAS DE DETALLE DINÁMICAS
+// ════════════════════════════════════════════════════════
+
+/** Actualiza los meta tags Open Graph y el <title> */
+function updateOpenGraph({ title, description, image, url }) {
+  document.title = `${title} | IEEE Rama Estudiantil UNMSM`;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute('content', val); };
+  set('og-title',       title);
+  set('og-description', description || '');
+  set('og-image',       image || '/images/default-meta.jpg');
+  set('og-url',         url || window.location.href);
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) pageTitle.textContent = `${title} | IEEE Rama Estudiantil UNMSM`;
+}
+
+/** D.4 — Barra de compartir */
+function renderShareBar(title, url) {
+  const encoded = encodeURIComponent(url);
+  const text    = encodeURIComponent(title);
+  return `
+    <div class="share-bar">
+      <span>Compartir:</span>
+      <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('${url}').then(()=>this.textContent='¡Copiado!')">
+        <i data-lucide="link"></i> Copiar enlace
+      </button>
+      <a class="share-btn share-btn-wa" href="https://wa.me/?text=${text}%20${encoded}" target="_blank" rel="noopener">
+        <i data-lucide="message-circle"></i> WhatsApp
+      </a>
+      <a class="share-btn share-btn-tw" href="https://twitter.com/intent/tweet?text=${text}&url=${encoded}" target="_blank" rel="noopener">
+        <i data-lucide="twitter"></i> Twitter
+      </a>
+    </div>`;
+}
+
+/** D.1 — Capítulo detalle */
+async function loadCapituloDetalle() {
+  const root = document.getElementById('capitulo-detail-root');
+  if (!root) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const slug   = params.get('slug');
+  if (!slug) {
+    root.innerHTML = `<div class="cap-not-found container"><h2>Capítulo no encontrado</h2><p>No se proporcionó un identificador de capítulo.</p><a href="/capitulos" class="btn btn-primary">← Volver a Capítulos</a></div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/capitulos/${slug}`);
+    if (!res.ok) throw new Error('Not found');
+    const cap = await res.json();
+
+    updateOpenGraph({
+      title:       cap.nombre || cap.sigla,
+      description: cap.descripcion,
+      image:       cap.imagen_path ? `${UPLOADS_BASE_URL}${cap.imagen_path}` : null,
+      url:         window.location.href,
+    });
+
+    const logoHtml = cap.logo_path
+      ? `<img class="cap-detail-logo" src="${UPLOADS_BASE_URL}${cap.logo_path}" alt="Logo ${cap.sigla}" loading="lazy">`
+      : `<div class="cap-detail-logo-placeholder">${(cap.sigla||'?').slice(0,3)}</div>`;
+
+    // Fetch contenido reciente del capítulo
+    const contRes  = await fetch(`${API_BASE_URL}/contenido?capitulo=${encodeURIComponent(cap.sigla)}&estado=aprobado`);
+    const contenidos = contRes.ok ? await contRes.json() : [];
+    const recientes  = contenidos.slice(0, 3);
+
+    const recienteHtml = recientes.length ? `
+      <section style="padding: var(--space-8) 0; background: var(--bg-body);">
+        <div class="container">
+          <h2 style="font-family:'Orbitron',sans-serif;font-size:var(--text-2xl);color:var(--ieee-dark);margin-bottom:var(--space-5);">
+            Publicaciones Recientes
+          </h2>
+          <div class="cap-reciente-grid">
+            ${recientes.map(c => `
+              <a href="/contenido-detalle?slug=${c.slug}" style="text-decoration:none;">
+                <div class="noticia-card" style="background:#fff;padding:var(--space-5);border-radius:var(--radius-card);">
+                  <span class="article-type-badge type-${c.tipo}" style="font-size:var(--text-xs);padding:2px 10px;border-radius:50px;margin-bottom:8px;display:inline-block;">${c.tipo}</span>
+                  <h3 style="color:var(--ieee-dark);font-size:var(--text-base);margin-bottom:var(--space-2);">${c.titulo}</h3>
+                  <p style="color:var(--text-muted);font-size:var(--text-sm);">${(c.extracto||'').slice(0,100)}…</p>
+                </div>
+              </a>`).join('')}
+          </div>
+        </div>
+      </section>` : '';
+
+    const redes = [];
+    if (cap.facebook)  redes.push(`<a class="cap-social-link" href="${cap.facebook}"  target="_blank" rel="noopener"><i data-lucide="facebook"></i> Facebook</a>`);
+    if (cap.instagram) redes.push(`<a class="cap-social-link" href="${cap.instagram}" target="_blank" rel="noopener"><i data-lucide="instagram"></i> Instagram</a>`);
+    if (cap.linkedin)  redes.push(`<a class="cap-social-link" href="${cap.linkedin}"  target="_blank" rel="noopener"><i data-lucide="linkedin"></i> LinkedIn</a>`);
+    if (cap.email)     redes.push(`<a class="cap-social-link" href="mailto:${cap.email}"><i data-lucide="mail"></i> Email</a>`);
+
+    root.innerHTML = `
+      <div class="cap-detail-hero">
+        <div class="container">
+          ${logoHtml}
+          <div class="cap-detail-meta">
+            <span class="cap-detail-sigla">${cap.sigla || ''}</span>
+            <h1>${cap.nombre || cap.sigla}</h1>
+            <p class="cap-detail-desc">${cap.descripcion || ''}</p>
+            <div class="cap-detail-actions">
+              ${cap.web ? `<a href="${cap.web}" target="_blank" rel="noopener" class="btn btn-primary"><i data-lucide="globe"></i> Sitio web</a>` : ''}
+              <a href="/capitulos" class="btn btn-secondary">← Todos los capítulos</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="cap-detail-body">
+        <div class="container cap-detail-grid">
+          <div class="cap-detail-main">
+            ${cap.descripcion_larga ? `<h2>Sobre el capítulo</h2><p>${cap.descripcion_larga}</p>` : ''}
+            ${cap.mision  ? `<h2>Misión</h2><p>${cap.mision}</p>`  : ''}
+            ${cap.vision  ? `<h2>Visión</h2><p>${cap.vision}</p>`  : ''}
+            ${renderShareBar(cap.nombre || cap.sigla, window.location.href)}
+          </div>
+          <aside>
+            <div class="cap-sidebar-card">
+              <h3>Información</h3>
+              ${cap.fundacion ? `<div class="cap-info-row"><strong>Fundación</strong><span>${cap.fundacion}</span></div>` : ''}
+              ${cap.email     ? `<div class="cap-info-row"><strong>Email</strong><a href="mailto:${cap.email}" style="color:var(--ieee-blue)">${cap.email}</a></div>` : ''}
+              ${cap.miembros  ? `<div class="cap-info-row"><strong>Miembros</strong><span>${cap.miembros}</span></div>` : ''}
+            </div>
+            ${redes.length ? `<div class="cap-sidebar-card"><h3>Redes sociales</h3><div class="cap-social-links">${redes.join('')}</div></div>` : ''}
+          </aside>
+        </div>
+      </section>
+      ${recienteHtml}`;
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    root.innerHTML = `
+      <div class="container cap-not-found">
+        <h2>Capítulo no encontrado</h2>
+        <p>No existe un capítulo con ese identificador o el servidor no está disponible.</p>
+        <a href="/capitulos" class="btn btn-primary">← Volver a Capítulos</a>
+      </div>`;
+  }
+}
+
+/** D.2 — Contenido detalle (noticia/proyecto/evento unificado) */
+async function loadContenidoDetalle() {
+  const root = document.getElementById('contenido-detail-root');
+  if (!root) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const slug   = params.get('slug');
+  if (!slug) {
+    root.innerHTML = `<div class="container content-not-found"><h2>Artículo no encontrado</h2><p>No se proporcionó un identificador.</p><a href="/" class="btn btn-primary">← Volver al inicio</a></div>`;
+    return;
+  }
+
+  const TYPE_LABELS = { noticia: 'Noticia', proyecto: 'Proyecto', evento: 'Evento' };
+  const TYPE_ICONS  = { noticia: 'newspaper', proyecto: 'rocket', evento: 'calendar' };
+  const backLinks   = { noticia: '/noticias', proyecto: '/proyectos', evento: '/concursos' };
+
+  try {
+    const res  = await fetch(`${API_BASE_URL}/contenido/slug/${slug}`);
+    if (!res.ok) throw new Error('Not found');
+    const art  = await res.json();
+    const tipo = art.tipo || 'noticia';
+    const url  = window.location.href;
+    const imgSrc = art.imagen_path ? `${UPLOADS_BASE_URL}${art.imagen_path}` : null;
+
+    updateOpenGraph({
+      title:       art.titulo,
+      description: art.extracto || art.descripcion,
+      image:       imgSrc,
+      url,
+    });
+
+    const fecha = art.publicado_at
+      ? new Date(art.publicado_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' })
+      : '';
+
+    // Campos extra según tipo
+    let extraInfo = '';
+    if (tipo === 'evento') {
+      if (art.fecha_evento) extraInfo += `<div class="sidebar-info-item"><strong>Fecha</strong><span>${new Date(art.fecha_evento).toLocaleDateString('es-PE')}</span></div>`;
+      if (art.lugar)        extraInfo += `<div class="sidebar-info-item"><strong>Lugar</strong><span>${art.lugar}</span></div>`;
+      if (art.link)         extraInfo += `<div class="sidebar-info-item"><strong>Inscripción</strong><a href="${art.link}" target="_blank" rel="noopener" style="color:var(--ieee-blue)">Ver enlace</a></div>`;
+    }
+    if (tipo === 'proyecto' && art.estado_proyecto) {
+      extraInfo += `<div class="sidebar-info-item"><strong>Estado</strong><span>${art.estado_proyecto}</span></div>`;
+    }
+
+    root.innerHTML = `
+      <div class="article-hero" ${imgSrc ? `style="background:var(--ieee-dark);"` : ''}>
+        ${imgSrc ? `<div class="article-hero-bg" style="background-image:url('${imgSrc}');"></div>` : ''}
+        <div class="container">
+          <div class="breadcrumb">
+            <a href="/">Inicio</a><span>›</span>
+            <a href="${backLinks[tipo] || '/'}">${TYPE_LABELS[tipo] || tipo}s</a><span>›</span>
+            <span>${art.titulo}</span>
+          </div>
+          <div class="article-type-badge type-${tipo}">
+            <i data-lucide="${TYPE_ICONS[tipo] || 'file-text'}"></i>
+            ${TYPE_LABELS[tipo] || tipo}
+          </div>
+          <h1>${art.titulo}</h1>
+          <div class="article-meta-row">
+            ${art.autor_nombre ? `<span class="article-meta-item"><i data-lucide="user"></i> ${art.autor_nombre}</span>` : ''}
+            ${fecha             ? `<span class="article-meta-item"><i data-lucide="calendar"></i> ${fecha}</span>` : ''}
+            ${art.capitulo      ? `<span class="article-meta-item"><i data-lucide="layers"></i> ${art.capitulo}</span>` : ''}
+            ${art.vistas        ? `<span class="article-meta-item"><i data-lucide="eye"></i> ${art.vistas} vistas</span>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="container article-layout">
+        <article class="article-body">
+          ${imgSrc ? `<img class="article-featured-img" src="${imgSrc}" alt="${art.titulo}" loading="lazy">` : ''}
+          ${art.extracto ? `<p style="font-size:var(--text-lg);font-weight:500;color:var(--text-primary);border-left:4px solid var(--ieee-blue);padding-left:var(--space-4);margin-bottom:var(--space-6);">${art.extracto}</p>` : ''}
+          <div class="article-content">
+            ${art.cuerpo || art.descripcion || '<p>Sin contenido disponible.</p>'}
+          </div>
+          ${renderShareBar(art.titulo, url)}
+        </article>
+
+        <aside class="article-sidebar">
+          <div class="sidebar-card">
+            <h3>Detalles</h3>
+            <div class="sidebar-info-item"><strong>Tipo</strong><span>${TYPE_LABELS[tipo] || tipo}</span></div>
+            ${art.capitulo ? `<div class="sidebar-info-item"><strong>Capítulo</strong><span>${art.capitulo}</span></div>` : ''}
+            ${art.categoria ? `<div class="sidebar-info-item"><strong>Categoría</strong><span>${art.categoria}</span></div>` : ''}
+            ${extraInfo}
+          </div>
+          <a href="${backLinks[tipo] || '/'}" class="btn btn-secondary" style="width:100%;justify-content:center;">
+            <i data-lucide="arrow-left"></i> Volver
+          </a>
+        </aside>
+      </div>`;
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    root.innerHTML = `
+      <div class="container content-not-found">
+        <h2>Artículo no encontrado</h2>
+        <p>El artículo solicitado no existe o no está disponible.</p>
+        <a href="/" class="btn btn-primary">← Volver al inicio</a>
+      </div>`;
+  }
+}
+
   if (page === 'home') {
     initAdvancedCanvas();
     loadCapitulos();
