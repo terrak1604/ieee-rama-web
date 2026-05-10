@@ -4,6 +4,38 @@
 
 ---
 
+[2026-05-10 16:50]
+- Bloque F: Editor de capítulos con tabs.
+  F.1 Schema capitulo_detalle ya existía con todos los campos necesarios.
+  F.2 Endpoints PATCH /api/capitulos/:slug y POST /api/capitulos/:slug/archivos
+  ya implementados con permisos canEditChapter (rol+capitulo).
+  F.3 Modal rediseñado con 3 tabs:
+  - Tab Información: nombre, sigla, color picker (hex sync), fecha fundación,
+    desc corta con contador 300 chars, desc larga, misión, visión.
+  - Tab Imágenes: preview de logo circular y portada 16:9, carga con preview
+    inmediato antes de enviar, small tips.
+  - Tab Contacto y Redes: email, teléfono, web, Facebook, Instagram, LinkedIn,
+    YouTube, TikTok con validación de URLs en frontend.
+  F.4 Permisos: director_capitulo solo ve y edita su capítulo; director_rama
+  ve todos. Backend ya validaba canEditChapter antes de actualizar.
+
+---
+
+[2026-05-10 16:44]
+- Bloque E: Editor admin enriquecido.
+  E.1 Quill toolbar ampliada: headers 2-4, colores de texto/fondo, código, indent.
+  E.2 Endpoint POST /api/contenido/:id/archivos ya existía; integración completa.
+  E.3 UI de adjuntos rediseñada: cada archivo muestra thumbnail (imagen) o chip
+  PDF, campo de caption editable y handle de reorden drag-and-drop nativo.
+  Máximo 10 adjuntos; eliminar archivo no requiere recarga.
+  E.4 Autosave de borrador: guarda título, extracto, lugar, fecha, cuerpo Quill
+  en localStorage cada 30s de inactividad o al cambiar cualquier campo.
+  Badge dorado "Borrador guardado a las HH:MM" visible en la UI.
+  Borrador se restaura automáticamente al volver a la pestaña Editor.
+  Se borra tras guardar o hacer reset del formulario.
+
+---
+
 [2026-05-10 06:50]
 - Bloque D: Páginas de detalle dinámicas.
   capitulo-detalle.html: hero con logo/sigla, descripción, sidebar de info+redes,

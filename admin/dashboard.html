@@ -170,6 +170,7 @@
             <div class="form-group">
               <label for="noticiaImagen">Imagen</label>
               <input type="file" id="noticiaImagen" accept="image/*">
+              <div id="previewNoticiaImagen" class="img-preview-container"></div>
             </div>
             <div class="form-group">
               <label for="noticiaLink">Link</label>
@@ -206,6 +207,7 @@
             <div class="form-group">
               <label for="proyectoImagen">Imagen</label>
               <input type="file" id="proyectoImagen" accept="image/*">
+              <div id="previewProyectoImagen" class="img-preview-container"></div>
             </div>
             <div class="form-group">
               <label for="proyectoLink">Link al repositorio</label>
@@ -251,6 +253,7 @@
           <div class="form-group">
             <label for="eventoImagen">Imagen</label>
             <input type="file" id="eventoImagen" accept="image/*">
+            <div id="previewEventoImagen" class="img-preview-container"></div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary">Crear Evento</button>
@@ -426,58 +429,146 @@
     </main>
   </div>
 
+  <!-- ══════════════════════════════════════════
+       MODAL: Editor de Capítulo (tabs)
+       ══════════════════════════════════════════ -->
   <div id="capituloModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="capituloModalTitle">
-    <div class="modal-panel">
+    <div class="modal-panel modal-panel-wide">
       <button id="closeCapituloModal" class="modal-close" aria-label="Cerrar">×</button>
       <h2 id="capituloModalTitle">Editar Capítulo</h2>
-      <form id="formCapituloEditor" class="admin-form">
+
+      <!-- Tabs navigation -->
+      <div class="cap-tabs" role="tablist">
+        <button class="cap-tab active" data-cap-tab="info"    role="tab" aria-selected="true">📋 Información</button>
+        <button class="cap-tab"        data-cap-tab="images"  role="tab">🖼️ Imágenes</button>
+        <button class="cap-tab"        data-cap-tab="contact" role="tab">🔗 Contacto y Redes</button>
+      </div>
+
+      <form id="formCapituloEditor" class="admin-form" novalidate>
         <input type="hidden" id="capituloSlug">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="capituloNombre">Nombre</label>
-            <input type="text" id="capituloNombre">
+
+        <!-- Tab 1: Información -->
+        <div class="cap-tab-panel active" id="cap-panel-info">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloNombre">Nombre completo</label>
+              <input type="text" id="capituloNombre" placeholder="Ej: IEEE Women in Engineering">
+            </div>
+            <div class="form-group">
+              <label for="capituloSiglas">Sigla</label>
+              <input type="text" id="capituloSiglas" placeholder="Ej: WIE" maxlength="10">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloColor">Color principal</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <input type="color" id="capituloColor" style="width:48px;height:36px;border:none;background:none;cursor:pointer;padding:0;">
+                <input type="text"  id="capituloColorHex" placeholder="#00629b" maxlength="7" style="flex:1;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="capituloFecha">Fecha de fundación</label>
+              <input type="date" id="capituloFecha">
+            </div>
           </div>
           <div class="form-group">
-            <label for="capituloSiglas">Siglas</label>
-            <input type="text" id="capituloSiglas">
+            <label for="capituloDescCorta">Descripción corta <span style="font-weight:400;opacity:.6">(resumen de 1 párrafo)</span></label>
+            <textarea id="capituloDescCorta" rows="3" maxlength="300"></textarea>
+            <small id="capituloDescCortaCount" style="color:var(--text-secondary);font-size:.75rem;">0 / 300</small>
+          </div>
+          <div class="form-group">
+            <label for="capituloDescLarga">Descripción larga</label>
+            <textarea id="capituloDescLarga" rows="5"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloMision">Misión</label>
+              <textarea id="capituloMision" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="capituloVision">Visión</label>
+              <textarea id="capituloVision" rows="3"></textarea>
+            </div>
           </div>
         </div>
-        <div class="form-group">
-          <label for="capituloDescCorta">Descripción corta</label>
-          <textarea id="capituloDescCorta" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="capituloDescLarga">Descripción larga</label>
-          <textarea id="capituloDescLarga" rows="5"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="capituloMision">Misión</label>
-            <textarea id="capituloMision" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="capituloVision">Visión</label>
-            <textarea id="capituloVision" rows="3"></textarea>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="capituloLogo">Reemplazar logo</label>
-            <input type="file" id="capituloLogo" accept="image/*">
-          </div>
-          <div class="form-group">
-            <label for="capituloPortada">Reemplazar portada</label>
-            <input type="file" id="capituloPortada" accept="image/*">
+
+        <!-- Tab 2: Imágenes -->
+        <div class="cap-tab-panel" id="cap-panel-images">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Logo actual</label>
+              <div id="capituloLogoPreview" class="img-preview-circle">Sin logo</div>
+              <label for="capituloLogo" style="margin-top:12px;">Reemplazar logo <span style="opacity:.6;font-weight:400">(PNG/SVG recomendado)</span></label>
+              <input type="file" id="capituloLogo" accept="image/*">
+              <small style="color:var(--text-secondary);">Se mostrará circular en la página del capítulo.</small>
+            </div>
+            <div class="form-group">
+              <label>Portada / Banner actual</label>
+              <div id="capituloPortadaPreview" class="img-preview-banner">Sin portada</div>
+              <label for="capituloPortada" style="margin-top:12px;">Reemplazar portada <span style="opacity:.6;font-weight:400">(16:9 ideal)</span></label>
+              <input type="file" id="capituloPortada" accept="image/*">
+              <small style="color:var(--text-secondary);">Aparece como fondo en la página del capítulo.</small>
+            </div>
           </div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Guardar Capítulo</button>
+
+        <!-- Tab 3: Contacto y Redes -->
+        <div class="cap-tab-panel" id="cap-panel-contact">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloEmail">Email de contacto</label>
+              <input type="email" id="capituloEmail" placeholder="capitulo@ieee.org">
+            </div>
+            <div class="form-group">
+              <label for="capituloTelefono">Teléfono</label>
+              <input type="tel" id="capituloTelefono" placeholder="+51 999 000 000">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="capituloWeb">Sitio web</label>
+            <input type="url" id="capituloWeb" placeholder="https://wie.ieee-unmsm.org">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloFacebook">Facebook</label>
+              <input type="url" id="capituloFacebook" placeholder="https://facebook.com/…" class="cap-social-input">
+            </div>
+            <div class="form-group">
+              <label for="capituloInstagram">Instagram</label>
+              <input type="url" id="capituloInstagram" placeholder="https://instagram.com/…" class="cap-social-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloLinkedin">LinkedIn</label>
+              <input type="url" id="capituloLinkedin" placeholder="https://linkedin.com/in/…" class="cap-social-input">
+            </div>
+            <div class="form-group">
+              <label for="capituloYoutube">YouTube</label>
+              <input type="url" id="capituloYoutube" placeholder="https://youtube.com/…" class="cap-social-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capituloTiktok">TikTok</label>
+              <input type="url" id="capituloTiktok" placeholder="https://tiktok.com/@…" class="cap-social-input">
+            </div>
+            <div class="form-group"></div>
+          </div>
+          <div id="capSocialUrlError" class="field-error" style="display:none;">Una o más URLs de redes sociales no son válidas.</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="form-actions cap-modal-footer">
+          <button type="submit" class="btn-primary" id="capituloSubmitBtn">Guardar Capítulo</button>
           <button type="button" id="cancelCapituloModal" class="btn-outline">Cancelar</button>
         </div>
         <div id="capituloStatus" class="status-message hidden"></div>
       </form>
     </div>
   </div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
   <script src="admin.js"></script>
