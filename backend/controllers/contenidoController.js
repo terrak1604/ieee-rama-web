@@ -1,11 +1,20 @@
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 const { sanitizeHtml, uniqueSlug, normalizeChapterForUser } = require('../utils/editorial');
+const { enviarNotificacionPendiente, enviarNotificacionAprobado } = require('../utils/mailer');
 
 // GET contenido (con filtros)
 const getContenido = (req, res) => {
-  const { tipo, estado, capitulo, modo } = req.query;
+  const { tipo, estado, capitulo, modo, q } = req.query;
   let query = 'SELECT c.*, u.nombre as autor_nombre FROM contenido c JOIN usuarios u ON c.autor_id = u.id WHERE 1=1';
   const params = [];
+
+  if (q) {
+    query += ' AND (c.titulo LIKE ? OR c.descripcion LIKE ? OR c.extracto LIKE ?)';
+    const searchParam = `%${q}%`;
+    params.push(searchParam, searchParam, searchParam);
+  }
   const isAuthenticated = Boolean(req.user);
 
   if (tipo) {
@@ -167,6 +176,10 @@ const createContenido = async (req, res) => {
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
 
+      if (estado === 'pendiente_aprobacion') {
+        enviarNotificacionPendiente(titulo, safeCapitulo, extracto || descripcion);
+      }
+
       res.status(201).json({
         message: 'Contenido created successfully',
         id: this.lastID,
@@ -193,6 +206,14 @@ const aprobarContenido = (req, res) => {
       [id, aprobadoPor, 'aprobado', comentario],
       (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        
+        // Obtener autor del contenido para enviarle correo
+        db.get('SELECT c.titulo, u.email FROM contenido c JOIN usuarios u ON c.autor_id = u.id WHERE c.id = ?', [id], (err, row) => {
+          if (!err && row && row.email) {
+            enviarNotificacionAprobado(row.titulo, row.email);
+          }
+        });
+
         res.json({ message: 'Contenido approved' });
       }
     );
@@ -245,16 +266,29 @@ const updateContenido = async (req, res) => {
       }
     }
 
+    const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
     db.run(
       `UPDATE contenido 
        SET titulo = COALESCE(?, titulo), slug = ?, descripcion = COALESCE(?, descripcion),
            cuerpo = ?, extracto = COALESCE(?, extracto), categoria = COALESCE(?, categoria),
            lugar = COALESCE(?, lugar), fecha_evento = COALESCE(?, fecha_evento),
-           capitulo = ?, updated_at = CURRENT_TIMESTAMP 
+           capitulo = ?, imagen_path = COALESCE(?, imagen_path), updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [titulo, slug, descripcion, safeHtml, extracto, categoria, lugar, fecha_evento, safeCapitulo, id],
+      [titulo, slug, descripcion, safeHtml, extracto, categoria, lugar, fecha_evento, safeCapitulo, newImagePath, id],
       (err) => {
         if (err) return res.status(500).json({ error: err.message });
+
+        // Borrar imagen anterior si se subió una nueva
+        if (newImagePath && row.imagen_path) {
+          const oldFile = path.join(__dirname, '..', '..', row.imagen_path);
+          fs.unlink(oldFile, (unlinkErr) => {
+            if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+              console.error('Error deleting old image:', unlinkErr);
+            }
+          });
+        }
+
         res.json({ message: 'Contenido updated', slug });
       }
     );
@@ -265,15 +299,88 @@ const updateContenido = async (req, res) => {
 const deleteContenido = (req, res) => {
   const { id } = req.params;
   const autorId = req.user.id;
+  const rol = req.user.rol;
 
-  db.get('SELECT * FROM contenido WHERE id = ? AND autor_id = ?', [id, autorId], (err, row) => {
+  let query = 'SELECT * FROM contenido WHERE id = ?';
+  let params = [id];
+
+  if (rol !== 'director_rama') {
+    query += ' AND autor_id = ?';
+    params.push(autorId);
+  }
+
+  db.get(query, params, (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(403).json({ error: 'Cannot delete this content' });
 
     db.run('DELETE FROM contenido WHERE id = ?', [id], (err) => {
       if (err) return res.status(500).json({ error: err.message });
+      
+      // Borrado físico del archivo para evitar huérfanos
+      if (row.imagen_path) {
+        const filePath = path.join(__dirname, '..', '..', row.imagen_path);
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+            console.error('Error deleting file:', unlinkErr);
+          }
+        });
+      }
+      
       res.json({ message: 'Contenido deleted' });
     });
+  });
+};
+
+// Generador Open Graph SEO Estático
+const generarOpenGraph = (req, res) => {
+  const { slug } = req.params;
+  const baseUrl = req.protocol + '://' + req.get('host'); // e.g. http://localhost:3000
+
+  db.get('SELECT * FROM contenido WHERE slug = ?', [slug], (err, row) => {
+    if (err || !row) {
+      return res.redirect('/404.html');
+    }
+
+    const title = row.titulo;
+    const description = row.extracto || row.descripcion || 'IEEE UNMSM Contenido Oficial';
+    const image = row.imagen_path ? baseUrl + row.imagen_path : baseUrl + '/images/default-meta.jpg';
+    
+    // Redirect al frontend visual real (SPA)
+    const frontendUrl = `/contenido-detalle.html?slug=${row.slug}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>${title} | IEEE UNMSM</title>
+  
+  <!-- SEO Open Graph para Redes Sociales -->
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:image" content="${image}">
+  <meta property="og:url" content="${baseUrl}/api/contenido/share/${slug}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="IEEE Rama Estudiantil UNMSM">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${image}">
+  
+  <script>
+    // Inmediatamente después de ser leído por el bot (que ignora JS),
+    // el usuario humano será redirigido a la página visual real.
+    window.location.href = "${frontendUrl}";
+  </script>
+</head>
+<body>
+  <p>Redirigiendo a <a href="${frontendUrl}">${title}</a>...</p>
+</body>
+</html>
+    `;
+    res.send(html);
   });
 };
 
@@ -287,4 +394,5 @@ module.exports = {
   rechazarContenido,
   updateContenido,
   deleteContenido,
+  generarOpenGraph,
 };

@@ -4,6 +4,31 @@
 
 ---
 
+[2026-05-10 06:40]
+- Bloque B: Fixes críticos del backend.
+  updateContenido ahora borra la imagen anterior al subir una nueva (evita archivos huérfanos).
+  Tests Jest+Supertest: 11 tests — health, contenido público, auth (400/401),
+  rutas protegidas sin token (401), y bloqueo de paths sensibles (.env, sqlite, /backend/).
+  Mocks CJS de jsdom/dompurify para compatibilidad Jest con ESM (sin deps nuevas).
+  jest.config.js con moduleNameMapper y forceExit.
+
+---
+
+[2026-05-10 06:00]
+- Bloque A: Express ahora sirve frontend, admin y API en :3000 unificado.
+  Eliminada dependencia de npx serve. Añadidos start.bat, start.sh, package.json raíz.
+  Botón "Admin" añadido al navbar de las 10 páginas públicas.
+  Bloqueo explícito de paths sensibles (.env, database.sqlite, /backend/, .git).
+- Bloque A.5: Hardening de infra para producción.
+  nginx.conf reescrito: gzip, security headers, rate-limit en /api/auth/login,
+  routing multi-página correcto (no SPA), bloqueo de archivos sensibles.
+  docker-compose.yml: backend ya no expuesto al host, healthchecks, límites de
+  RAM/CPU, mounts específicos en lugar de toda la repo, network bridge dedicada.
+  Dockerfile: multi-stage build, usuario no-root, npm ci con lockfile.
+  Añadidos .dockerignore (raíz y backend/), backend/.env.example.
+
+---
+
 [2026-05-01 15:17]
 - Creación inicial del proyecto IEEE_Rama_General_Web
 - Estructura de carpetas: css/, js/, data/, images/ (capitulos, hero, noticias, galeria)
