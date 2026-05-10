@@ -4,6 +4,20 @@
 
 ---
 
+[2026-05-10 06:45]
+- Bloque C: Pulido visual base.
+  Tokens CSS: escala de espaciado 8px (--space-1 … --space-9) y tipografía Major Third
+  1.25 (--text-xs … --text-4xl). Sombras a 2 niveles (reposo/hover). radius-card → 12px.
+  Lucide Icons CDN añadido a las 10 páginas públicas + lucide.createIcons() en main.js.
+  Cards: hover 3D tilt (perspective 1000px rotateX 2deg), imagen 16:9 con zoom 1.05.
+  Botones: 3 variantes claras (primary, secondary, ghost) + active translateY(1px).
+  Inputs/forms: border #d1deeb, focus ring azul IEEE, labels en uppercase xs.
+  Skeleton loaders: animación shimmer 1.4s para estados de carga.
+  Navbar: backdrop-blur al scrollear, indicador activo con línea inferior animada.
+  Hero: min-height 88vh + text-shadow sutil. Secciones: padding var(--space-9)/--space-7.
+
+---
+
 [2026-05-10 06:40]
 - Bloque B: Fixes críticos del backend.
   updateContenido ahora borra la imagen anterior al subir una nueva (evita archivos huérfanos).

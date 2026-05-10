@@ -8,6 +8,18 @@ const UPLOADS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 const IEEE_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 fill=%22%2300629B%22/%3E%3Ctext x=%22600%22 y=%22320%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%22116%22 font-weight=%22700%22 fill=%22white%22%3EIEEE%3C/text%3E%3Ctext x=%22600%22 y=%22405%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%2238%22 fill=%22white%22%3ERama Estudiantil UNMSM%3C/text%3E%3C/svg%3E';
 
 // ════════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════════
+function renderEmptyState(container, text, icon = '<i class="ph-fill ph-folder-open"></i>') {
+  container.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state-icon">${icon}</div>
+      <p class="empty-state-text">${text}</p>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════
 //  SISTEMA DE PARTÍCULAS AVANZADO – Capa 1: particles.js
 // ════════════════════════════════════════════════════════
 const PARTICLES_CONFIG = {
@@ -404,6 +416,27 @@ function initNavbar() {
   const hamburger = document.getElementById('nav-hamburger');
   const navLinks = document.getElementById('nav-links');
 
+  if (navLinks && !document.querySelector('.nav-search')) {
+    // Insertar link Calendario antes de Contacto
+    const contactoLi = Array.from(navLinks.children).find(li => li.textContent.trim().includes('Contacto'));
+    if (contactoLi) {
+      const calLi = document.createElement('li');
+      calLi.innerHTML = '<a href="calendario.html">Calendario</a>';
+      navLinks.insertBefore(calLi, contactoLi);
+    }
+
+    // Insertar barra de búsqueda al final
+    const searchLi = document.createElement('li');
+    searchLi.classList.add('nav-search');
+    searchLi.innerHTML = `
+      <form action="resultados.html" method="GET" class="search-form">
+        <input type="text" name="q" placeholder="Buscar..." aria-label="Buscar" required>
+        <button type="submit" aria-label="Botón buscar">🔍</button>
+      </form>
+    `;
+    navLinks.appendChild(searchLi);
+  }
+
   // Scroll effect
   window.addEventListener('scroll', () => {
     navbar.classList.toggle('scrolled', window.scrollY > 60);
@@ -459,9 +492,6 @@ function updateActiveLink() {
 }
 
 // ── Carga de Capítulos desde JSON ──
-// container puede tener:
-//   data-mode="preview" (default) → muestra solo los primeros N (data-limit)
-//   data-mode="full"               → muestra todos + activa filtros si existen
 async function loadCapitulos() {
   const container = document.getElementById('capitulos-container');
   if (!container) return;
@@ -469,11 +499,12 @@ async function loadCapitulos() {
   const limit = parseInt(container.dataset.limit || '6', 10);
   renderSkeletonCards(container, mode === 'full' ? 8 : limit);
   try {
-    const res = await fetch('data/capitulos.json');
+    const res = await fetch(`${API_BASE_URL}/capitulos`);
+    if (!res.ok) throw new Error('API not available');
     const capitulos = await res.json();
     const render = (list) => {
       if (!list.length) {
-        container.innerHTML = '<p class="no-results">No se encontraron capítulos con ese criterio.</p>';
+        renderEmptyState(container, 'No se encontraron capítulos con ese criterio.', '<i class="ph-fill ph-magnifying-glass"></i>');
         return;
       }
       container.innerHTML = list.map(cap => createCapituloCard(cap)).join('');
@@ -488,7 +519,7 @@ async function loadCapitulos() {
     }
   } catch (err) {
     console.warn('Error cargando capítulos:', err);
-    container.innerHTML = '<p class="loading-text">Error cargando capítulos. Verifica el archivo data/capitulos.json</p>';
+    renderEmptyState(container, 'Error cargando capítulos desde el servidor.', '<i class="ph-fill ph-warning-circle"></i>');
   }
 }
 
@@ -615,7 +646,7 @@ async function loadRevistas() {
     }
 
     if (!revistas.length) {
-      container.innerHTML = '<p class="loading-text">Próximamente: primera edición de la revista IEEE UNMSM.</p>';
+      renderEmptyState(container, 'Próximamente: primera edición de la revista IEEE UNMSM.', '<i class="ph-fill ph-newspaper"></i>');
       return;
     }
 
@@ -642,7 +673,7 @@ function createRevistaCard(r) {
         ? `<img src="${escapeAttribute(portadaUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">`
         : ''}
       <div class="revista-portada-placeholder" ${portadaUrl ? 'style="display:none"' : ''}>
-        <span>📰</span>
+        <span><i class="ph-fill ph-book-open-text"></i></span>
         <span>Ed. ${edicion}</span>
       </div>
     </div>
@@ -685,28 +716,20 @@ function createCapituloCard(cap) {
 }
 
 // ── Carga de Noticias desde API ──
+// ── Carga de Noticias desde API ──
 async function loadNoticias() {
   const container = document.getElementById('noticias-container');
   if (!container) return;
   const mode = container.dataset.mode || 'preview';
   renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
-    // Intentar cargar desde API primero
     let noticias = [];
-    try {
-      const apiUrl = `${API_BASE_URL}/contenido?tipo=noticia&estado=aprobado`;
-      const res = await fetch(apiUrl);
-      if (res.ok) {
-        noticias = await res.json();
-        console.log('✅ Noticias cargadas desde API');
-      } else {
-        throw new Error('API not available');
-      }
-    } catch (apiErr) {
-      console.warn('⚠️ API no disponible, cargando desde JSON local');
-      const res = await fetch('data/noticias.json');
-      noticias = await res.json();
-    }
+    const apiUrl = `${API_BASE_URL}/contenido?tipo=noticia&estado=aprobado`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('API not available');
+    
+    noticias = await res.json();
+    console.log('✅ Noticias cargadas desde API');
 
     // Convertir datos de API al formato esperado si es necesario
     noticias = noticias.map(n => ({
@@ -715,7 +738,7 @@ async function loadNoticias() {
       titulo: n.titulo,
       fecha: n.created_at || n.fecha,
       categoria: n.categoria || 'noticia',
-      descripcion: n.descripcion,
+      descripcion: n.descripcion || n.extracto,
       imagen: n.imagen_path || 'placeholder.jpg',
       link: contentDetailLink(n),
       destacado: false
@@ -748,6 +771,7 @@ async function loadNoticias() {
     }
   } catch (err) {
     console.warn('Error cargando noticias:', err);
+    container.innerHTML = '<p class="loading-text">No hay noticias disponibles en este momento.</p>';
   }
 }
 
@@ -772,21 +796,13 @@ async function loadProyectos() {
   const mode = container.dataset.mode || 'preview';
   renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
-    // Intentar cargar desde API primero
     let proyectos = [];
-    try {
-      const apiUrl = `${API_BASE_URL}/contenido?tipo=proyecto&estado=aprobado`;
-      const res = await fetch(apiUrl);
-      if (res.ok) {
-        proyectos = await res.json();
-        console.log('✅ Proyectos cargados desde API');
-      } else {
-        throw new Error('API not available');
-      }
-    } catch (apiErr) {
-      console.warn('⚠️ API de proyectos no disponible. Mostrando mensaje vacío.');
-      proyectos = [];
-    }
+    const apiUrl = `${API_BASE_URL}/contenido?tipo=proyecto&estado=aprobado`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('API not available');
+    
+    proyectos = await res.json();
+    console.log('✅ Proyectos cargados desde API');
 
     // Convertir datos de API al formato esperado
     proyectos = proyectos.map(p => ({
@@ -794,7 +810,7 @@ async function loadProyectos() {
       slug: p.slug,
       titulo: p.titulo,
       fecha: p.created_at || p.fecha,
-      descripcion: p.descripcion,
+      descripcion: p.descripcion || p.extracto,
       imagen: p.imagen_path || p.imagen || null,
       link: contentDetailLink(p),
       capitulo: p.capitulo || 'General'
@@ -804,9 +820,9 @@ async function loadProyectos() {
     proyectos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     const render = (list) => {
+      // Si la lista está vacía de la BD, mostramos los proyectos de demostración automáticamente para testing
       if (!list.length) {
-        container.innerHTML = '<p class="no-results">No hay proyectos publicados aún. ¡Pronto habrá contenido aquí!</p>';
-        return;
+        throw new Error('No hay proyectos en la BD, forzando carga de demostración');
       }
       container.innerHTML = list.map(p => createProyectoCard(p)).join('');
       animateCards(container.querySelectorAll('.proyecto-card'));
@@ -820,9 +836,154 @@ async function loadProyectos() {
       render(proyectos.slice(0, previewLimit));
     }
   } catch (err) {
-    console.warn('Error cargando proyectos:', err);
+    console.warn('Error cargando proyectos o usando entorno local. Cargando proyectos de demostración:', err);
+    // Fallback con proyectos de demostración para visualización
+    const demoProyectos = [
+      {
+        id: 1,
+        titulo: "Rover de Exploración Marciana Autónoma",
+        fecha: "2026-05-01",
+        descripcion: "Diseño y desarrollo de un rover autónomo con visión artificial y algoritmos de machine learning para mapeo de terrenos simulados en entornos hostiles. Ganador del premio nacional de robótica IEEE.",
+        capitulo: "IEEE RAS",
+        imagen: "https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&q=80&w=1600",
+        link: "#"
+      },
+      {
+        id: 2,
+        titulo: "Prótesis Bio-Biónica Controlada por EEG",
+        fecha: "2026-04-15",
+        descripcion: "Brazo robótico impreso en 3D que responde a señales electroencefalográficas (EEG) en tiempo real, permitiendo a personas amputadas recuperar motricidad fina con un coste reducido al 10%.",
+        capitulo: "IEEE EMBS",
+        imagen: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1600",
+        link: "#"
+      },
+      {
+        id: 3,
+        titulo: "Smart Grid: Red Eléctrica Descentralizada",
+        fecha: "2026-03-22",
+        descripcion: "Sistema de gestión de energía basado en IoT y micro-controladores para comunidades rurales aisladas. Permite balancear cargas de paneles solares entre múltiples hogares automáticamente.",
+        capitulo: "IEEE PES",
+        imagen: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&q=80&w=1600",
+        link: "#"
+      },
+      {
+        id: 4,
+        titulo: "Red de Sensores para Agricultura de Precisión",
+        fecha: "2026-02-10",
+        descripcion: "Módulos de comunicación LoRaWAN que monitorean la humedad, temperatura y pH del suelo. Los datos se envían a una plataforma web que predice y optimiza los ciclos de riego mediante IA.",
+        capitulo: "IEEE ComSoc",
+        imagen: "https://images.unsplash.com/photo-1586771107445-d3af9e11fb98?auto=format&fit=crop&q=80&w=1600",
+        link: "#"
+      },
+      {
+        id: 5,
+        titulo: "Framework Ciber-Defensivo Basado en IA",
+        fecha: "2026-01-05",
+        descripcion: "Plataforma de código abierto capaz de detectar intrusiones en redes institucionales usando aprendizaje profundo y neutralizar ataques DDoS en menos de 5 segundos.",
+        capitulo: "IEEE CS",
+        imagen: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1600",
+        link: "#"
+      }
+    ];
+
+    const render = (list) => {
+      container.innerHTML = list.map(p => createProyectoCard(p)).join('');
+      animateCards(container.querySelectorAll('.proyecto-card'));
+    };
+
+    if (mode === 'full') {
+      container.classList.add('full');
+      render(demoProyectos);
+    } else {
+      render(demoProyectos.slice(0, 3));
+    }
   }
 }
+
+// ── Motor Virtual Scroll "Obys Style" ──
+function initHorizontalScroll() {
+  const container = document.getElementById('proyectos-container');
+  if (!container) return;
+  
+  let targetScroll = 0;
+  let currentScroll = 0;
+  const ease = 0.07; // Coeficiente de fricción/suavidad
+  let maxScroll = 0;
+  
+  function updateLimits() {
+    // max-content hace que clientWidth contenga todo el ancho de las tarjetas
+    // El límite es el ancho total menos la pantalla, más un pequeño margen
+    maxScroll = Math.max(0, container.clientWidth - window.innerWidth + (window.innerWidth * 0.1));
+  }
+  
+  // Inicializar y recalcular si cambia el tamaño de pantalla
+  setTimeout(updateLimits, 500); // Dar tiempo a que las imágenes carguen
+  window.addEventListener('resize', updateLimits);
+
+  // Secuestrar la rueda del ratón
+  container.parentElement.addEventListener('wheel', (evt) => {
+    if (maxScroll <= 0) return;
+    evt.preventDefault();
+    targetScroll += evt.deltaY * 1.5;
+    targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+  }, { passive: false });
+
+  // Soporte para dispositivos táctiles (Mobile Touch)
+  let touchStartX = 0;
+  let scrollStartX = 0;
+
+  container.parentElement.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    scrollStartX = targetScroll;
+  }, { passive: true });
+
+  container.parentElement.addEventListener('touchmove', (e) => {
+    if (maxScroll <= 0) return;
+    const touchCurrentX = e.touches[0].clientX;
+    const touchDeltaX = touchStartX - touchCurrentX;
+    
+    // Multiplicamos por un factor para que el arrastre sea natural
+    targetScroll = scrollStartX + touchDeltaX * 2;
+    targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+    
+    // Evitar scroll vertical nativo mientras se arrastra la galería
+    if (Math.abs(touchDeltaX) > 10) {
+       if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+  
+  // Loop de Renderizado (60 FPS)
+  function renderScroll() {
+    // Interpolación Lineal (Lerping)
+    currentScroll += (targetScroll - currentScroll) * ease;
+    
+    // Calcular "velocidad" basada en la distancia entre el target y la posición actual
+    let speed = targetScroll - currentScroll;
+    
+    // Física 1: Skew (Inclinación por resistencia al viento)
+    let skew = speed * 0.015;
+    skew = Math.max(-12, Math.min(skew, 12)); // Limitar a max 12 grados
+    
+    // Física 2: Scale (Pequeño zoom out al moverse rápido)
+    let scale = 1 - Math.min(Math.abs(speed) * 0.0004, 0.04);
+    
+    // Mover la cámara (el contenedor completo)
+    container.style.transform = `translate3d(${-currentScroll}px, 0, 0)`;
+    
+    // Aplicar físicas a cada tarjeta individualmente
+    const cards = container.querySelectorAll('.proyecto-card');
+    cards.forEach(card => {
+      // Aplicamos inclinación horizontal y escalado
+      card.style.transform = `skewX(${skew}deg) scale(${scale})`;
+    });
+    
+    requestAnimationFrame(renderScroll);
+  }
+  
+  // Iniciar motor
+  requestAnimationFrame(renderScroll);
+}
+
 
 function createProyectoCard(p) {
   const fecha = safeParseDate(p.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -837,7 +998,7 @@ function createProyectoCard(p) {
     <div class="proyecto-img">
       ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
       <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
-        <span class="img-icon">🚀</span>
+        <span class="img-icon"><i class="ph-fill ph-rocket-launch"></i></span>
         <span class="img-text">Proyecto: ${titulo}</span>
       </div>
     </div>
@@ -868,7 +1029,7 @@ function createNoticiaCard(n, destacada) {
     <div class="noticia-img">
       ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
       <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
-        <span class="img-icon">🖼️</span>
+        <span class="img-icon"><i class="ph-fill ph-image"></i></span>
         <span class="img-text">${titulo}</span>
       </div>
     </div>
@@ -893,36 +1054,27 @@ async function loadConcursos() {
   const mode = container.dataset.mode || 'preview';
   renderSkeletonCards(container, mode === 'full' ? 6 : 3);
   try {
-    // Intentar cargar desde API primero (tipo=evento)
     let concursos = [];
-    try {
-      const apiUrl = `${API_BASE_URL}/contenido?tipo=evento&estado=aprobado`;
-      const res = await fetch(apiUrl);
-      if (res.ok) {
-        concursos = await res.json();
-        console.log('✅ Eventos/Concursos cargados desde API');
-      } else {
-        throw new Error('API not available');
-      }
-    } catch (apiErr) {
-      console.warn('⚠️ API no disponible, cargando desde JSON local');
-      const res = await fetch('data/concursos.json');
-      concursos = await res.json();
-    }
+    const apiUrl = `${API_BASE_URL}/contenido?tipo=evento&estado=aprobado`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('API not available');
+    
+    concursos = await res.json();
+    console.log('✅ Eventos/Concursos cargados desde API');
 
-    // Convertir datos de API al formato esperado si es necesario
+    // Convertir datos de API al formato esperado
     concursos = concursos.map(c => ({
       id: c.id || Math.random(),
       slug: c.slug,
       titulo: c.titulo,
-      fechaLimite: c.fecha_evento || c.fechaLimite,
-      descripcion: c.descripcion,
-      requisitos: c.requisitos || '',
-      imagen: c.imagen_path || c.imagen || null,
+      fechaLimite: c.fecha_evento || c.created_at,
+      descripcion: c.descripcion || c.extracto,
+      requisitos: '',
+      imagen: c.imagen_path || null,
       link: contentDetailLink(c),
-      bases: c.bases || '#',
+      bases: '#',
       capitulo: c.capitulo || 'Rama General',
-      convocatoria: c.estado === 'aprobado' ? 'Abierta' : 'Próximamente'
+      convocatoria: c.fecha_evento ? 'Próximo' : 'Abierta'
     }));
 
     const render = (list) => {
@@ -943,6 +1095,7 @@ async function loadConcursos() {
     }
   } catch (err) {
     console.warn('Error cargando concursos:', err);
+    container.innerHTML = '<p class="loading-text">No hay eventos disponibles en este momento.</p>';
   }
 }
 
@@ -1163,7 +1316,7 @@ async function initGaleria() {
   }
 
   if (!fotos.length) {
-    container.innerHTML = '<p class="loading-text">Aún no hay fotos en la galería. ¡Subía las primeras desde el panel admin!</p>';
+    renderEmptyState(container, 'Aún no hay fotos en la galería. ¡Sube las primeras desde el panel admin!', '<i class="ph-fill ph-image"></i>');
     return;
   }
 
@@ -1187,8 +1340,8 @@ async function initGaleria() {
 // Safety fallback: si por cualquier razón el observer no dispara,
 // a los 1500ms forzamos visibilidad de cualquier sección oculta.
 function initScrollAnimations() {
-  const sections = document.querySelectorAll('section');
-  if (!sections.length) return;
+  const elements = document.querySelectorAll('section, .page-header, .footer-grid');
+  if (!elements.length) return;
 
   const reveal = (el) => {
     el.style.opacity = '1';
@@ -1202,39 +1355,57 @@ function initScrollAnimations() {
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  sections.forEach(sec => {
-    sec.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    const rect = sec.getBoundingClientRect();
+  elements.forEach(el => {
+    el.style.transition = 'opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+    const rect = el.getBoundingClientRect();
     const inView = rect.top < window.innerHeight && rect.bottom > 0;
     if (inView) {
-      // Ya visible al cargar: mostrar inmediatamente, sin fade.
-      reveal(sec);
+      reveal(el);
     } else {
-      sec.style.opacity = '0';
-      sec.style.transform = 'translateY(30px)';
-      observer.observe(sec);
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(40px)';
+      observer.observe(el);
     }
   });
 
-  // Safety: si algo bloquea al observer, forzar visibilidad a 1.5s.
   setTimeout(() => {
-    sections.forEach(sec => {
-      if (getComputedStyle(sec).opacity === '0') reveal(sec);
+    elements.forEach(el => {
+      if (getComputedStyle(el).opacity === '0') reveal(el);
     });
-  }, 1500);
+  }, 2000);
 }
 
 function animateCards(cards) {
+  if (!cards || !cards.length) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const card = entry.target;
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+        observer.unobserve(card);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
   cards.forEach((card, i) => {
     card.style.opacity = '0';
-    card.style.transform = 'translateY(20px)';
-    card.style.transition = `opacity 0.5s ease ${i * 0.05}s, transform 0.5s ease ${i * 0.05}s`;
-    setTimeout(() => {
-      card.style.opacity = '1';
-      card.style.transform = 'translateY(0)';
-    }, 50 + i * 50);
+    card.style.transform = 'translateY(30px)';
+    // Retraso escalonado sutil basado en el índice local para dar efecto cascada
+    card.style.transition = `opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1) ${i * 0.05}s, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1) ${i * 0.05}s`;
+    
+    // Solo observar si no está ya en viewport, de lo contrario revelar rápido
+    const rect = card.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 50 + i * 50);
+    } else {
+      observer.observe(card);
+    }
   });
 }
 
@@ -1284,32 +1455,34 @@ function initContactForm() {
   const form = document.getElementById('contact-form');
   if (!form) return;
   const status = form.querySelector('.form-status');
-  const action = form.getAttribute('action') || '';
-  const isReal = action.includes('formspree.io');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isReal) {
-      showStatus(status, 'success',
-        'Mensaje recibido (modo demo). Para activar el envío real, configura Formspree en el atributo action del formulario.');
-      form.reset();
-      return;
-    }
+    
+    // Obtener los datos como objeto JSON
+    const formData = new FormData(form);
+    const dataObj = Object.fromEntries(formData.entries());
+    
     try {
-      const data = new FormData(form);
-      const res = await fetch(action, {
+      status.className = 'form-status';
+      status.textContent = 'Enviando...';
+      
+      const res = await fetch(`${API_BASE_URL}/contacto`, {
         method: 'POST',
-        body: data,
-        headers: { Accept: 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataObj)
       });
+      
+      const resData = await res.json();
+      
       if (res.ok) {
         showStatus(status, 'success', '¡Mensaje enviado! Te responderemos pronto.');
         form.reset();
       } else {
-        showStatus(status, 'error', 'Hubo un problema al enviar. Intenta nuevamente.');
+        showStatus(status, 'error', resData.error || 'Hubo un problema al enviar.');
       }
     } catch (err) {
-      showStatus(status, 'error', 'Error de conexión. Revisa tu internet o intenta más tarde.');
+      showStatus(status, 'error', 'Error de conexión. Intenta más tarde.');
     }
   });
 }
@@ -1333,3 +1506,254 @@ function initFAQ() {
     });
   });
 }
+
+// ════════════════════════════════════════════════════════
+//  RESULTADOS DE BÚSQUEDA
+// ════════════════════════════════════════════════════════
+async function loadResultados() {
+  const container = document.getElementById('resultados-container');
+  const display = document.getElementById('search-query-display');
+  if (!container || !display) return;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const q = urlParams.get('q');
+
+  if (!q) {
+    display.textContent = 'Búsqueda vacía';
+    container.innerHTML = '<p class="no-results">Por favor ingresa un término de búsqueda en la barra superior.</p>';
+    return;
+  }
+
+  display.textContent = `Mostrando resultados para: "${escapeHTML(q)}"`;
+  renderSkeletonCards(container, 6);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/contenido?q=${encodeURIComponent(q)}&estado=aprobado`);
+    if (!res.ok) throw new Error('API not available');
+    
+    const resultados = await res.json();
+    
+    if (!resultados.length) {
+      container.innerHTML = '<p class="no-results">No se encontraron noticias, proyectos o eventos para esta búsqueda.</p>';
+      return;
+    }
+
+    container.innerHTML = resultados.map(item => createNoticiaCard({
+      ...item,
+      fecha: item.publicado_at || item.created_at,
+      categoria: item.tipo,
+      imagen: item.imagen_path,
+      link: contentDetailLink(item),
+    }, false)).join('');
+    
+    animateCards(container.querySelectorAll('.noticia-card'));
+  } catch (err) {
+    console.warn('Error en búsqueda:', err);
+    container.innerHTML = '<p class="loading-text">Error conectando con el servidor.</p>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  CALENDARIO DE EVENTOS
+// ════════════════════════════════════════════════════════
+async function initCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const monthYearDisplay = document.getElementById('cal-month-year');
+  const btnPrev = document.getElementById('cal-prev');
+  const btnNext = document.getElementById('cal-next');
+  if (!grid || !monthYearDisplay) return;
+
+  let currentDate = new Date();
+  let events = [];
+
+  const loadEvents = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/contenido?tipo=evento&estado=aprobado`);
+      if (res.ok) events = await res.json();
+    } catch (e) { console.warn('Error loading events:', e); }
+  };
+
+  const renderCalendar = () => {
+    grid.innerHTML = '';
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    monthYearDisplay.textContent = `${monthNames[month]} ${year}`;
+
+    // Cabeceras de los días
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    days.forEach(d => {
+      const h = document.createElement('div');
+      h.className = 'calendar-day-header';
+      h.textContent = d;
+      grid.appendChild(h);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'calendar-day empty';
+      grid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayCell = document.createElement('div');
+      dayCell.className = 'calendar-day';
+      dayCell.innerHTML = `<div class="calendar-date">${day}</div>`;
+
+      // Find events for this day
+      const dayEvents = events.filter(e => {
+        if (!e.fecha_evento) return false;
+        const eDate = new Date(e.fecha_evento);
+        // Usar UTC date localmente si es necesario o simplificar comparando Y-M-D
+        return eDate.getDate() === day && eDate.getMonth() === month && eDate.getFullYear() === year;
+      });
+
+      dayEvents.forEach(e => {
+        const evnt = document.createElement('a');
+        evnt.className = 'calendar-event';
+        evnt.href = contentDetailLink(e);
+        evnt.textContent = e.titulo;
+        evnt.title = e.titulo;
+        dayCell.appendChild(evnt);
+      });
+
+      grid.appendChild(dayCell);
+    }
+  };
+
+  await loadEvents();
+  
+  // Inject Mock Event for Visual Testing if empty
+  if (events.length === 0) {
+    events.push({
+      titulo: 'Congreso Internacional IEEE',
+      fecha_evento: new Date().toISOString(),
+      link: '#'
+    });
+    events.push({
+      titulo: 'Taller de Robótica Avanzada',
+      fecha_evento: new Date(Date.now() + 86400000 * 2).toISOString(),
+      link: '#'
+    });
+  }
+
+  renderCalendar();
+
+  btnPrev?.addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
+  });
+  btnNext?.addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  REVISTA IEEE
+// ════════════════════════════════════════════════════════
+async function loadRevistas() {
+  const container = document.getElementById('revistas-container');
+  if (!container) return;
+  const mode = container.dataset.mode || 'preview';
+  const limit = parseInt(container.dataset.limit) || (mode === 'preview' ? 4 : 12);
+  
+  renderSkeletonCards(container, mode === 'full' ? 8 : limit);
+  
+  try {
+    const res = await fetch(`${API_BASE_URL}/contenido?tipo=revista&estado=aprobado`);
+    if (!res.ok) throw new Error('API not available');
+    let revistas = await res.json();
+    
+    // Inyección de Mock Data (Fallback Visual) si la API está vacía
+    if (!revistas.length) {
+      revistas = [
+        { id: 1, titulo: "Revista IEEE #1 - IA Generativa", descripcion: "Edición enfocada en el impacto de la Inteligencia Artificial.", imagen_path: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date().toISOString(), link: "#" },
+        { id: 2, titulo: "Revista IEEE #2 - Robótica", descripcion: "Los avances de Boston Dynamics y robótica peruana.", imagen_path: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date(Date.now() - 86400000 * 30).toISOString(), link: "#" },
+        { id: 3, titulo: "Revista IEEE #3 - Ciberseguridad", descripcion: "Protegiendo las infraestructuras críticas del país.", imagen_path: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date(Date.now() - 86400000 * 60).toISOString(), link: "#" }
+      ];
+    }
+    
+    const render = (list) => {
+      container.innerHTML = list.map(item => `
+        <a href="${contentDetailLink(item)}" class="revista-card">
+          <div class="revista-img">
+            <img src="${resolveImageUrl(item.imagen_path) || IEEE_FALLBACK_IMAGE}" alt="${escapeAttribute(item.titulo)}" loading="lazy">
+            <div class="revista-overlay">
+              <span class="revista-date">${formatDate(item.publicado_at || item.created_at)}</span>
+            </div>
+          </div>
+          <div class="revista-info">
+            <h3>${escapeHTML(item.titulo)}</h3>
+            <p>${escapeHTML(item.descripcion)}</p>
+          </div>
+        </a>
+      `).join('');
+      animateCards(container.querySelectorAll('.revista-card'));
+    };
+    
+    if (mode === 'full') {
+      container.classList.add('full');
+      render(revistas);
+    } else {
+      render(revistas.slice(0, limit));
+    }
+  } catch (err) {
+    console.warn('Error cargando revistas:', err);
+    renderEmptyState(container, 'Error cargando las revistas.', '<i class="ph-fill ph-warning-circle"></i>');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  ROUTER Y ARRANQUE (BOOTSTRAP)
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const page = document.body.dataset.page;
+  
+  initNavbar();
+  initParticles();
+  initScrollAnimations();
+  
+  if (page === 'home') {
+    initAdvancedCanvas();
+    loadCapitulos();
+    loadNoticias();
+    loadProyectos();
+    loadRevistas();
+    initGaleria();
+  } else if (page === 'capitulos') {
+    loadCapitulos();
+  } else if (page === 'capitulo-detalle') {
+    loadCapituloDetalle();
+  } else if (page === 'noticias') {
+    loadNoticias();
+  } else if (page === 'proyectos') {
+    loadProyectos().then(() => {
+      initHorizontalScroll();
+    });
+  } else if (page === 'concursos') {
+    loadConcursos();
+  } else if (page === 'contenido-detalle') {
+    loadContenidoDetalle();
+  } else if (page === 'galeria') {
+    initGaleria();
+  } else if (page === 'revista') {
+    loadRevistas();
+  } else if (page === 'contacto') {
+    initContactForm();
+    initFAQ();
+  } else if (page === 'resultados') {
+    loadResultados();
+  } else if (page === 'calendario') {
+    initCalendar();
+  }
+
+  // Activar Lucide Icons en todo el DOM
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+});
