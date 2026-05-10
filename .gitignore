@@ -4,17 +4,22 @@ backend/node_modules/
 
 # Environment
 .env
+.env.local
 backend/.env
+backend/database.sqlite
+backend/database.sqlite-journal
 
 # SQLite databases
 *.sqlite
 *.sqlite3
 *.db
-backend/database.sqlite
 
 # Runtime uploads
 backend/uploads/
 uploads/
+
+# SSL certificates
+ssl/
 
 # Logs
 *.log
