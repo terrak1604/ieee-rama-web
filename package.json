@@ -1,0 +1,13 @@
+{
+  "name": "ieee-unmsm-web",
+  "version": "1.0.0",
+  "description": "Portal IEEE Rama Estudiantil UNMSM",
+  "scripts": {
+    "start": "node backend/server.js",
+    "seed": "node backend/seed.js",
+    "deploy": "docker-compose up -d --build",
+    "deploy:logs": "docker-compose logs -f",
+    "deploy:stop": "docker-compose down"
+  },
+  "private": true
+}

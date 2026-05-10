@@ -12,19 +12,20 @@
   --ieee-gold:       #f0b429;
   --ieee-white:      #ffffff;
   --bg-body:         #f2f7ff;
-  --bg-card:         #ffffff;
-  --bg-card-hover:   #eaf3ff;
+  --bg-card:         rgba(255, 255, 255, 0.6);
+  --bg-card-hover:   rgba(255, 255, 255, 0.9);
   --border-glow:     rgba(0, 98, 155, 0.18);
+  --border-card:     rgba(255, 255, 255, 0.4);
   --text-primary:    #0d1f3c;
   --text-secondary:  #2d5272;
   --text-muted:      #6a90b2;
   --gradient-main:   linear-gradient(135deg, #002855 0%, #004d8f 50%, #0073b7 100%);
   --gradient-accent: linear-gradient(90deg, #00629b, #0099d6, #00629b);
-  --shadow-card:     0 4px 20px rgba(0, 40, 85, 0.1);
+  --shadow-card:     0 8px 32px rgba(0, 40, 85, 0.08);
   --shadow-glow:     0 0 20px rgba(0, 98, 155, 0.18);
   --radius-card:     16px;
   --radius-btn:      8px;
-  --transition:      all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:      all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* ── Reset base ── */
@@ -264,7 +265,9 @@ section * { pointer-events: auto; }
 }
 .capitulo-card {
   background: var(--bg-card);
-  border: 1px solid rgba(0, 98, 155, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-card);
   overflow: hidden;
   transition: var(--transition);
@@ -315,7 +318,9 @@ section * { pointer-events: auto; }
 }
 .noticia-card {
   background: var(--bg-card);
-  border: 1px solid rgba(0, 98, 155, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-card);
   overflow: hidden; transition: var(--transition);
   box-shadow: var(--shadow-card);
@@ -355,52 +360,165 @@ section * { pointer-events: auto; }
 
 /* ── Proyectos ── */
 #proyectos { background: #ffffff; }
+
+/* Vista en modo grid regular (Home) */
 .proyectos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 1.5rem;
 }
+
+/* Vista en modo horizontal premium (Proyectos Slider) */
+body[data-page="proyectos"] section {
+  /* Hacemos que el section pueda sobresalir del container si es necesario, 
+     o le damos espacio para el scroll. */
+  padding-bottom: 2rem;
+  overflow: hidden; /* Esencial para Virtual Scroll */
+}
+
+body[data-page="proyectos"] .proyectos-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3rem;
+  padding: 2rem 5vw; 
+  margin: 0 calc(-50vw + 50%); /* Hace que rompa el grid del container normal */
+  width: max-content;
+  will-change: transform; /* Optimización de rendimiento para animaciones 60fps */
+}
+
 .proyecto-card {
   background: var(--bg-card);
-  border: 1px solid rgba(0, 98, 155, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-card);
   overflow: hidden; transition: var(--transition);
   box-shadow: var(--shadow-card);
 }
 .proyecto-card:hover { transform: translateY(-4px); border-color: var(--ieee-blue); box-shadow: 0 8px 28px rgba(0,40,85,0.15), var(--shadow-glow); }
+
+/* Adaptaciones de la Tarjeta en Modo Premium */
+body[data-page="proyectos"] .proyecto-card {
+  flex: 0 0 calc(85vw - 2rem);
+  max-width: 1100px;
+  height: 65vh;
+  min-height: 500px;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  will-change: transform;
+}
+body[data-page="proyectos"] .proyecto-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 20px 50px rgba(0,40,85,0.25), var(--shadow-glow);
+}
+
 .proyecto-img {
   width: 100%; height: 180px;
   background: #cce4f7;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: var(--text-muted); gap: 0.5rem; position: relative;
+  overflow: hidden;
 }
-.proyecto-img img { width: 100%; height: 100%; object-fit: cover; }
+body[data-page="proyectos"] .proyecto-img {
+  height: 65%;
+}
+/* Efecto Parallax en la imagen al hacer hover */
+.proyecto-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+body[data-page="proyectos"] .proyecto-card:hover .proyecto-img img {
+  transform: scale(1.05);
+}
+
 .proyecto-img .img-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
 .proyecto-img .img-icon { font-size: 2rem; opacity: 0.4; }
 .proyecto-img .img-text { font-size: 0.7rem; opacity: 0.4; text-align: center; }
-.proyecto-body { padding: 1.25rem; display: flex; flex-direction: column; }
+
+.proyecto-body { padding: 1.25rem; display: flex; flex-direction: column; transition: var(--transition); }
+body[data-page="proyectos"] .proyecto-body {
+  height: 35%;
+  justify-content: center;
+  padding: 2rem 3rem;
+  background: rgba(255, 255, 255, 0.85);
+}
+
 .proyecto-meta { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .proyecto-capitulo {
   padding: 2px 10px; border-radius: 20px;
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
   background: rgba(240,180,41,0.2); color: var(--ieee-gold);
 }
+body[data-page="proyectos"] .proyecto-capitulo { font-size: 0.85rem; padding: 4px 14px; }
 .proyecto-fecha { font-size: 0.75rem; color: var(--text-muted); }
+
 .proyecto-titulo { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.6rem; line-height: 1.4; }
+body[data-page="proyectos"] .proyecto-titulo {
+  font-size: 2.2rem;
+  letter-spacing: -0.5px;
+  margin-bottom: 1rem;
+}
+
 .proyecto-desc { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5; flex: 1; }
+body[data-page="proyectos"] .proyecto-desc {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
 .proyecto-link {
   display: inline-flex; align-items: center; gap: 0.4rem;
   margin-top: 1rem; color: var(--ieee-light-blue);
   font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: var(--transition);
 }
+body[data-page="proyectos"] .proyecto-link {
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+}
 .proyecto-link:hover { gap: 0.7rem; }
+
+/* ── Responsive para Proyectos Premium ── */
+@media (max-width: 992px) {
+  body[data-page="proyectos"] .proyecto-card {
+    flex: 0 0 calc(90vw - 1rem);
+    height: 55vh;
+  }
+  body[data-page="proyectos"] .proyecto-titulo {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-page="proyectos"] .proyectos-grid {
+    gap: 1.5rem;
+    padding: 1rem 5vw;
+  }
+  body[data-page="proyectos"] .proyecto-card {
+    flex: 0 0 calc(95vw - 1rem);
+    height: 50vh;
+    min-height: 400px;
+  }
+  body[data-page="proyectos"] .proyecto-body {
+    padding: 1.5rem;
+  }
+  body[data-page="proyectos"] .proyecto-titulo {
+    font-size: 1.5rem;
+  }
+  body[data-page="proyectos"] .proyecto-desc {
+    font-size: 0.95rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
 
 /* ── Concursos ── */
 #concursos { background: #eaf3ff; }
 .concursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
 .concurso-card {
   background: var(--bg-card);
-  border: 1px solid rgba(0, 98, 155, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-card); padding: 0;
   transition: var(--transition);
   display: flex; flex-direction: column;
@@ -433,6 +551,178 @@ section * { pointer-events: auto; }
 .concurso-desc { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem; flex: 1; }
 .concurso-fecha { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--ieee-gold); margin-bottom: 1.25rem; }
 .concurso-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+/* ── Revista (Premium Styling) ── */
+.revistas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+.revista-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  aspect-ratio: 3/4; /* Proporciones de portada de revista */
+}
+.revista-img {
+  width: 100%;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.revista-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.revista-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  padding: 1.5rem;
+}
+.revista-date {
+  color: var(--ieee-gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.revista-info {
+  padding: 1.5rem;
+  background: rgba(2, 13, 26, 0.8);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.revista-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 98, 155, 0.2), 0 0 0 1px rgba(0, 153, 214, 0.4);
+}
+.revista-card:hover .revista-img img {
+  transform: scale(1.08);
+}
+.revista-card:hover .revista-info {
+  transform: translateY(0);
+}
+.revista-info h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.revista-info p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Calendario Interactivo ── */
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  background: var(--bg-card);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-card);
+  backdrop-filter: blur(10px);
+}
+.calendar-controls button {
+  background: transparent;
+  color: var(--ieee-light-blue);
+  border: 1px solid var(--ieee-light-blue);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+.calendar-controls button:hover {
+  background: rgba(0, 153, 214, 0.1);
+}
+.calendar-month-year {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.calendar-day-header {
+  text-align: center;
+  font-weight: 700;
+  color: var(--ieee-gold);
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.calendar-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  min-height: 120px;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+}
+.calendar-day.empty {
+  background: transparent;
+  border: none;
+}
+.calendar-day:not(.empty):hover {
+  background: rgba(0, 40, 85, 0.8);
+  border-color: var(--ieee-light-blue);
+}
+.calendar-date {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-align: right;
+}
+.calendar-event {
+  display: block;
+  background: rgba(0, 153, 214, 0.15);
+  border-left: 3px solid var(--ieee-light-blue);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 0.4rem;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-bottom: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+.calendar-event:hover {
+  background: rgba(0, 153, 214, 0.3);
+  transform: translateX(2px);
+}
 
 /* ── Galería ── */
 .galeria-grid {
@@ -1057,3 +1347,185 @@ section * { pointer-events: auto; }
   .detail-layout { grid-template-columns: 1fr; }
   .chapter-logo { width: 104px; height: 104px; }
 }
+
+/* ─── Buscador Global Navbar ─── */
+.nav-search {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+.search-form {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: var(--transition);
+}
+.search-form:focus-within {
+  border-color: var(--ieee-light-blue);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(0, 153, 214, 0.3);
+}
+.search-form input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  width: 150px;
+  outline: none;
+  transition: width 0.3s ease;
+}
+.search-form input:focus {
+  width: 200px;
+}
+.search-form input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.search-form button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 0 0.8rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+.search-form button:hover {
+  color: var(--ieee-light-blue);
+}
+
+@media (max-width: 768px) {
+  .nav-search {
+    margin-left: 0;
+    margin-top: 1rem;
+    width: 100%;
+  }
+  .search-form {
+    width: 100%;
+  }
+  .search-form input {
+    width: 100%;
+  }
+  .search-form input:focus {
+    width: 100%;
+  }
+}
+
+/* ─── Calendario ─── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+.calendar-day-header {
+  text-align: center;
+  font-weight: 700;
+  color: var(--ieee-light-blue);
+  padding: 10px;
+  border-bottom: 2px solid var(--ieee-blue);
+}
+.calendar-day {
+  min-height: 100px;
+  background: var(--bg-card);
+  border: 1px solid rgba(0, 98, 155, 0.15);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.calendar-day.empty {
+  background: rgba(0, 40, 85, 0.2);
+  border-color: transparent;
+}
+.calendar-date {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+  margin-bottom: 4px;
+}
+.calendar-event {
+  background: rgba(0, 153, 214, 0.15);
+  border-left: 3px solid var(--ieee-light-blue);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #fff;
+  text-decoration: none;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: var(--transition);
+}
+.calendar-event:hover {
+  background: rgba(0, 153, 214, 0.3);
+}
+
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.calendar-controls button {
+  background: var(--ieee-blue);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+}
+.calendar-controls button:hover {
+  background: var(--ieee-light-blue);
+}
+.calendar-month-year {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  color: white;
+  text-transform: capitalize;
+}
+
+/* ════════════════════════════════════════
+   EMPTY STATES & LOADING
+   ════════════════════════════════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: rgba(0, 20, 45, 0.4);
+  border: 1px dashed rgba(0, 153, 214, 0.3);
+  border-radius: 12px;
+  text-align: center;
+  margin: 20px 0;
+  width: 100%;
+}
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.8;
+}
+.empty-state-text {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  max-width: 400px;
+}
+
+/* ── Nav Admin Link ── */
+.nav-admin-link {
+  color: rgba(255,255,255,0.65);
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.25);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.nav-admin-link:hover { color: #ffffff; border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.15); }
+@media (max-width: 768px) { .nav-admin-link { display: none; } }

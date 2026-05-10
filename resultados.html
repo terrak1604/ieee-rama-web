@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Resultados de búsqueda IEEE UNMSM">
+  <title>Resultados de Búsqueda | IEEE Rama Estudiantil UNMSM</title>
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="resultados">
+  <!-- Loader -->
+  <div id="loader">
+    <div class="loader-logo">IEEE</div>
+    <p class="loader-text">Rama Estudiantil · UNMSM</p>
+    <div class="loader-bar"><div class="loader-progress"></div></div>
+  </div>
+
+  <!-- Partículas -->
+  <div id="particles-js"></div>
+
+  <!-- Navbar -->
+  <nav id="navbar" role="navigation" aria-label="Navegación principal">
+    <a href="index.html" class="nav-brand" aria-label="Inicio IEEE UNMSM">
+      <div>
+        <div class="nav-logo-text">IEEE</div>
+        <div class="nav-logo-sub">Rama Estudiantil · UNMSM</div>
+      </div>
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="capitulos.html">Capítulos</a></li>
+      <li><a href="noticias.html">Noticias</a></li>
+      <li><a href="proyectos.html">Proyectos</a></li>
+      <li><a href="concursos.html">Concursos</a></li>
+      <li><a href="revista.html">Revista</a></li>
+      <li><a href="galeria.html">Galería</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div class="nav-social">
+      <a href="/admin/login.html" class="nav-admin-link" title="Panel administrativo" aria-label="Panel administrativo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </a>
+    </div>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Menú móvil" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Header Section -->
+  <header class="page-header" id="resultados-header">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="Ruta de navegación">
+        <a href="index.html">Inicio</a><span class="sep">›</span><span>Búsqueda</span>
+      </nav>
+      <h1 class="page-title">Resultados de Búsqueda</h1>
+      <p class="page-subtitle" id="search-query-display">Buscando...</p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="resultados-content">
+    <section>
+      <div class="container">
+        <!-- Contenedor dinámico -->
+        <div id="resultados-container" class="noticias-grid full" data-mode="full">
+          <!-- Esqueletos o resultados se inyectan aquí vía main.js -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo-text">IEEE UNMSM</div>
+          <p class="footer-desc">Avanzando la tecnología para el beneficio de la humanidad a través de nuestros Capítulos y Grupos de Afinidad en San Marcos.</p>
+          <div class="footer-social footer-social-tight">
+            <a href="#" aria-label="Facebook"><span class="icon">📘</span></a>
+            <a href="#" aria-label="Instagram"><span class="icon">📷</span></a>
+            <a href="#" aria-label="LinkedIn"><span class="icon">💼</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 IEEE Rama Estudiantil UNMSM. Todos los derechos reservados.</p>
+        <a href="admin/login.html">Panel de Administración</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script defer src="js/main.js"></script>
+</body>
+</html>
