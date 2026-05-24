@@ -27,6 +27,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Test coverage
+coverage/
+backend/coverage/
+
 # OS / editor
 .DS_Store
 Thumbs.db

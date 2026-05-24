@@ -15,19 +15,25 @@ function safeFilename(originalname) {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${name}${ext}`;
 }
 
-function uploadFor(subdir) {
+function uploadFor(subdir, options = {}) {
   const destination = path.join(UPLOAD_ROOT, subdir);
   ensureDir(destination);
+  const maxFileSize = options.maxFileSize || 10 * 1024 * 1024;
+  const imagesOnly = Boolean(options.imagesOnly);
 
   return multer({
     storage: multer.diskStorage({
       destination,
       filename: (req, file, cb) => cb(null, safeFilename(file.originalname)),
     }),
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: maxFileSize },
     fileFilter: (req, file, cb) => {
       const isImage = file.mimetype.startsWith('image/');
       const isDocument = ['application/pdf'].includes(file.mimetype);
+
+      if (imagesOnly && !isImage) {
+        return cb(new Error('Solo se permiten imagenes'));
+      }
 
       if (!isImage && !isDocument) {
         return cb(new Error('Solo se permiten imagenes y PDF'));
@@ -106,6 +112,7 @@ function uploadPath(file) {
 }
 
 module.exports = {
+  uploadFor,
   chapterUpload,
   contentUpload,
   validateContentFiles,

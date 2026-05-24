@@ -17,7 +17,20 @@
       "Bash(node server.js)",
       "Bash(cmd.exe /c start http://localhost:64666/admin/login.html)",
       "Bash(npx serve *)",
-      "Bash(node seed.js)"
+      "Bash(node seed.js)",
+      "Bash(cmd.exe /c start http://localhost:51103)",
+      "Bash(cmd.exe /c start http://localhost:51103/admin/login.html)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(grep -E \"\\\\.md$|\\\\.txt$\")",
+      "Bash(cd \"C:\\\\Users\\\\PC\\\\Desktop\\\\IEEE_Rama_General_Web\" && rm -f audit_report.md recomendaciones_funcionalidades.md reporte_actualizacion.md contexto_completo.md realimentacion.txt && ls *.md *.txt 2>/dev/null)",
+      "Bash(cmd.exe /c start http://localhost:3000)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Invoke-WebRequest -Uri \"http://localhost:3000/capitulos.html\" -UseBasicParsing)",
+      "Bash(Select-Object -ExpandProperty StatusCode)",
+      "Bash(node --check \"C:\\\\Users\\\\PC\\\\Desktop\\\\IEEE_Rama_General_Web\\\\backend\\\\server.js\")",
+      "Bash(node --check \"C:\\\\Users\\\\PC\\\\Desktop\\\\IEEE_Rama_General_Web\\\\backend\\\\routes\\\\rss.js\")",
+      "Bash(node --check \"C:\\\\Users\\\\PC\\\\Desktop\\\\IEEE_Rama_General_Web\\\\js\\\\main.js\")",
+      "Bash(npm test *)"
     ]
   }
 }

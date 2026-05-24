@@ -27,6 +27,9 @@ const uploadContenidoArchivos = (req, res) => {
     const inserted = files.map((file, index) => {
       const tipo = file.mimetype.startsWith('image/') ? 'imagen' : 'documento';
       const archivo_path = uploadPath(file);
+      const caption = req.body[`caption_${index}`] || req.body.caption || '';
+      const ordenRaw = req.body[`orden_${index}`] ?? req.body.orden ?? index;
+      const orden = Number.isFinite(Number(ordenRaw)) ? Number(ordenRaw) : index;
 
       stmt.run([
         contenido.id,
@@ -35,11 +38,11 @@ const uploadContenidoArchivos = (req, res) => {
         file.originalname,
         file.mimetype,
         file.size,
-        Number(req.body.orden || 0) + index,
-        '',
+        orden,
+        caption,
       ]);
 
-      return { tipo, archivo_path, nombre_original: file.originalname, mime_type: file.mimetype };
+      return { tipo, archivo_path, nombre_original: file.originalname, mime_type: file.mimetype, orden, caption };
     });
 
     stmt.finalize((finalizeErr) => {

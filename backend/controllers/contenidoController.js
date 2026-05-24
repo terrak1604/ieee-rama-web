@@ -1,4 +1,4 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 const { sanitizeHtml, uniqueSlug, normalizeChapterForUser } = require('../utils/editorial');
@@ -76,6 +76,41 @@ const getContenidoBySlug = (req, res) => {
   });
 };
 
+function canManageContenido(user, contenido) {
+  if (!user || !contenido) return false;
+  if (user.rol === 'director_rama') return true;
+  return Number(contenido.autor_id) === Number(user.id) || contenido.capitulo === user.capitulo;
+}
+
+// GET detalle administrativo por id, incluye borradores/pendientes y adjuntos
+const getContenidoAdminById = (req, res) => {
+  const { id } = req.params;
+
+  db.get(
+    `SELECT c.*, u.nombre as autor_usuario
+     FROM contenido c
+     JOIN usuarios u ON c.autor_id = u.id
+     WHERE c.id = ?`,
+    [id],
+    (err, contenido) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!contenido) return res.status(404).json({ error: 'Contenido not found' });
+      if (!canManageContenido(req.user, contenido)) {
+        return res.status(403).json({ error: 'Cannot view this content' });
+      }
+
+      db.all(
+        'SELECT * FROM contenido_archivos WHERE contenido_id = ? ORDER BY orden ASC, id ASC',
+        [contenido.id],
+        (filesErr, archivos) => {
+          if (filesErr) return res.status(500).json({ error: filesErr.message });
+          res.json({ ...contenido, archivos: archivos || [] });
+        }
+      );
+    }
+  );
+};
+
 // GET contenido pendiente de aprobación (solo para rama)
 const getPendientes = (req, res) => {
   const query = `
@@ -125,11 +160,24 @@ const createContenido = async (req, res) => {
     fecha_evento,
     lugar,
     link,
+    etiquetas,
+    // Nuevos campos noticias
+    es_destacada,
+    breaking_label,
+    lead_paragraph,
+    // Nuevos campos académicos
+    abstract,
+    doi,
+    peer_reviewed,
+    referencias,
+    publicacion_vol,
   } = req.body;
   const autorId = req.user.id;
   const imagen_path = req.file ? `/uploads/${req.file.filename}` : null;
   const safeCapitulo = normalizeChapterForUser(req.user, capitulo);
   const safeHtml = sanitizeHtml(cuerpo || descripcion || '');
+  const etiquetasStr = typeof etiquetas === 'string' ? etiquetas : '[]';
+  const referenciasStr = typeof referencias === 'string' ? referencias : '[]';
 
   // Director de rama publica directo; capítulos pasan por aprobación.
   const estado = req.user.rol === 'director_rama' ? 'aprobado' : 'pendiente_aprobacion';
@@ -149,8 +197,10 @@ const createContenido = async (req, res) => {
   const query = `
     INSERT INTO contenido 
     (tipo, titulo, slug, descripcion, cuerpo, extracto, autor_id, autor_nombre, capitulo, estado,
-     imagen_path, categoria, fecha_evento, lugar, link, publicado_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     imagen_path, categoria, fecha_evento, lugar, link, publicado_at, etiquetas,
+     es_destacada, breaking_label, lead_paragraph,
+     abstract, doi, peer_reviewed, referencias, publicacion_vol)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.run(
@@ -172,6 +222,15 @@ const createContenido = async (req, res) => {
       lugar,
       link,
       publicadoAt,
+      etiquetasStr,
+      es_destacada ? 1 : 0,
+      breaking_label || null,
+      lead_paragraph || null,
+      abstract || null,
+      doi || null,
+      peer_reviewed ? 1 : 0,
+      referenciasStr,
+      publicacion_vol || null,
     ],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -244,7 +303,13 @@ const rechazarContenido = (req, res) => {
 // UPDATE contenido (solo autor)
 const updateContenido = async (req, res) => {
   const { id } = req.params;
-  const { titulo, descripcion, cuerpo, extracto, categoria, lugar, fecha_evento, capitulo } = req.body;
+  const {
+    titulo, descripcion, cuerpo, extracto, categoria, lugar, fecha_evento, capitulo, etiquetas,
+    // Nuevos campos noticias
+    es_destacada, breaking_label, lead_paragraph,
+    // Nuevos campos académicos
+    abstract, doi, peer_reviewed, referencias, publicacion_vol,
+  } = req.body;
   const autorId = req.user.id;
 
   db.get('SELECT * FROM contenido WHERE id = ?', [id], async (err, row) => {
@@ -267,21 +332,41 @@ const updateContenido = async (req, res) => {
     }
 
     const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const etiquetasStr   = typeof etiquetas   === 'string' ? etiquetas   : row.etiquetas;
+    const referenciasStr = typeof referencias === 'string' ? referencias : row.referencias;
 
     db.run(
       `UPDATE contenido 
        SET titulo = COALESCE(?, titulo), slug = ?, descripcion = COALESCE(?, descripcion),
            cuerpo = ?, extracto = COALESCE(?, extracto), categoria = COALESCE(?, categoria),
            lugar = COALESCE(?, lugar), fecha_evento = COALESCE(?, fecha_evento),
-           capitulo = ?, imagen_path = COALESCE(?, imagen_path), updated_at = CURRENT_TIMESTAMP 
+           capitulo = ?, imagen_path = COALESCE(?, imagen_path), etiquetas = COALESCE(?, etiquetas),
+           es_destacada = COALESCE(?, es_destacada), breaking_label = COALESCE(?, breaking_label),
+           lead_paragraph = COALESCE(?, lead_paragraph),
+           abstract = COALESCE(?, abstract), doi = COALESCE(?, doi),
+           peer_reviewed = COALESCE(?, peer_reviewed), referencias = COALESCE(?, referencias),
+           publicacion_vol = COALESCE(?, publicacion_vol),
+           updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [titulo, slug, descripcion, safeHtml, extracto, categoria, lugar, fecha_evento, safeCapitulo, newImagePath, id],
+      [
+        titulo, slug, descripcion, safeHtml, extracto, categoria, lugar, fecha_evento,
+        safeCapitulo, newImagePath, etiquetasStr,
+        typeof es_destacada !== 'undefined' ? (es_destacada ? 1 : 0) : null,
+        breaking_label || null,
+        lead_paragraph || null,
+        abstract || null,
+        doi || null,
+        typeof peer_reviewed !== 'undefined' ? (peer_reviewed ? 1 : 0) : null,
+        referenciasStr,
+        publicacion_vol || null,
+        id,
+      ],
       (err) => {
         if (err) return res.status(500).json({ error: err.message });
 
         // Borrar imagen anterior si se subió una nueva
         if (newImagePath && row.imagen_path) {
-          const oldFile = path.join(__dirname, '..', '..', row.imagen_path);
+          const oldFile = path.join(__dirname, '..', row.imagen_path.replace(/^\/uploads\//, 'uploads/'));
           fs.unlink(oldFile, (unlinkErr) => {
             if (unlinkErr && unlinkErr.code !== 'ENOENT') {
               console.error('Error deleting old image:', unlinkErr);
@@ -313,20 +398,34 @@ const deleteContenido = (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(403).json({ error: 'Cannot delete this content' });
 
-    db.run('DELETE FROM contenido WHERE id = ?', [id], (err) => {
+    db.all('SELECT archivo_path FROM contenido_archivos WHERE contenido_id = ?', [id], (filesErr, archivos = []) => {
+      if (filesErr) return res.status(500).json({ error: filesErr.message });
+
+      db.run('DELETE FROM contenido WHERE id = ?', [id], (err) => {
       if (err) return res.status(500).json({ error: err.message });
       
       // Borrado físico del archivo para evitar huérfanos
       if (row.imagen_path) {
-        const filePath = path.join(__dirname, '..', '..', row.imagen_path);
+        const filePath = path.join(__dirname, '..', row.imagen_path.replace(/^\/uploads\//, 'uploads/'));
         fs.unlink(filePath, (unlinkErr) => {
           if (unlinkErr && unlinkErr.code !== 'ENOENT') {
             console.error('Error deleting file:', unlinkErr);
           }
         });
       }
+
+      archivos.forEach((archivo) => {
+        if (!archivo.archivo_path) return;
+        const filePath = path.join(__dirname, '..', archivo.archivo_path.replace(/^\/uploads\//, 'uploads/'));
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+            console.error('Error deleting attachment:', unlinkErr);
+          }
+        });
+      });
       
       res.json({ message: 'Contenido deleted' });
+      });
     });
   });
 };
@@ -387,6 +486,7 @@ const generarOpenGraph = (req, res) => {
 module.exports = {
   getContenido,
   getContenidoBySlug,
+  getContenidoAdminById,
   getPendientes,
   getMisContenido,
   createContenido,

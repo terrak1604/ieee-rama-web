@@ -1,7 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <script>if(localStorage.getItem('theme')=='dark')document.documentElement.setAttribute('data-theme','dark');</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Noticias, eventos, talleres y anuncios de la Rama Estudiantil IEEE UNMSM.">
   <title>Noticias & Anuncios | IEEE Rama Estudiantil UNMSM</title>
@@ -9,7 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=18.0">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body data-page="noticias">
 
@@ -45,10 +47,13 @@
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
       </a>
-      <a href="https://facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">𝗙</a>
-      <a href="https://instagram.com/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">📷</a>
-      <a href="https://linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">in</a>
-      <a href="https://wa.me/" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp">💬</a>
+      <button class="dark-toggle" id="darkToggle" title="Modo oscuro" aria-label="Cambiar tema">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="https://facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="ph-fill ph-facebook-logo"></i></a>
+      <a href="https://instagram.com/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><i class="ph-fill ph-instagram-logo"></i></a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><i class="ph-fill ph-linkedin-logo"></i></a>
+      <a href="https://wa.me/" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp"><i class="ph-fill ph-whatsapp-logo"></i></a>
     </div>
     <button class="nav-hamburger" id="nav-hamburger" aria-label="Menú móvil" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -68,7 +73,7 @@
         de la Rama Estudiantil IEEE UNMSM. Filtra por categoría para encontrar
         exactamente lo que te interesa.
       </p>
-      <span class="page-counter">Gestiona contenido desde el panel de administración</span>
+
     </div>
   </header>
 
@@ -89,6 +94,7 @@
       <div class="noticias-grid" id="noticias-container" data-mode="full">
         <p class="loading-text">Cargando noticias...</p>
       </div>
+      <div id="noticias-pagination" class="pagination-container"></div>
 
     </div>
   </section>
@@ -103,11 +109,11 @@
             Formando ingenieros líderes en tecnología e innovación desde Lima, Perú.
           </p>
           <div class="footer-social">
-            <a href="https://facebook.com/" target="_blank" rel="noopener" title="Facebook" aria-label="Facebook">𝗙</a>
-            <a href="https://instagram.com/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">📷</a>
-            <a href="https://linkedin.com/" target="_blank" rel="noopener" title="LinkedIn" aria-label="LinkedIn">in</a>
-            <a href="https://twitter.com/" target="_blank" rel="noopener" title="X / Twitter" aria-label="Twitter">𝕏</a>
-            <a href="https://wa.me/" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">💬</a>
+            <a href="https://facebook.com/" target="_blank" rel="noopener" title="Facebook" aria-label="Facebook"><i class="ph-fill ph-facebook-logo"></i></a>
+            <a href="https://instagram.com/" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram"><i class="ph-fill ph-instagram-logo"></i></a>
+            <a href="https://linkedin.com/" target="_blank" rel="noopener" title="LinkedIn" aria-label="LinkedIn"><i class="ph-fill ph-linkedin-logo"></i></a>
+            <a href="https://twitter.com/" target="_blank" rel="noopener" title="X / Twitter" aria-label="Twitter"><i class="ph-fill ph-x-logo"></i></a>
+            <a href="https://wa.me/" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"><i class="ph-fill ph-whatsapp-logo"></i></a>
           </div>
         </div>
         <div>
@@ -135,28 +141,28 @@
         <div>
           <h3 class="footer-col-title">Contacto</h3>
           <div class="footer-contact-item">
-            <span class="icon">📍</span>
+            <span class="icon"><i class="ph-fill ph-map-pin"></i></span>
             <p>Universidad Nacional Mayor de San Marcos<br>Lima, Perú</p>
           </div>
           <div class="footer-contact-item">
-            <span class="icon">✉️</span>
+            <span class="icon"><i class="ph-fill ph-envelope-simple"></i></span>
             <p><a href="mailto:ieee@unmsm.edu.pe" class="link-highlight">ieee@unmsm.edu.pe</a></p>
           </div>
           <div class="footer-contact-item">
-            <span class="icon">🌐</span>
+            <span class="icon"><i class="ph-fill ph-globe"></i></span>
             <p><a href="https://ieee.org" target="_blank" rel="noopener" class="link-highlight">ieee.org</a></p>
           </div>
         </div>
       </div>
       <div class="footer-bottom">
         <p>© 2026 <a href="index.html">IEEE Rama Estudiantil UNMSM</a>. Todos los derechos reservados.</p>
-        <p>Desarrollado con ❤️ por la Rama IEEE UNMSM · Lima, Perú</p>
+        <p>Desarrollado por la Rama IEEE UNMSM · Lima, Perú</p>
       </div>
     </div>
   </footer>
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-  <script defer src="js/main.js"></script>
+  <script defer src="js/main.js?v=18.0"></script>
 </body>
 </html>

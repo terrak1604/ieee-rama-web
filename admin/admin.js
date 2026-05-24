@@ -1,5 +1,5 @@
-// ==================== API CONFIG ====================
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000/api';
+﻿// ==================== API CONFIG ====================
+const API_BASE_URL = window.API_BASE_URL || window.location.origin + '/api';
 
 // ==================== AUTH UTILITIES ====================
 function getToken() {
@@ -21,7 +21,6 @@ function isAuthenticated() {
   return !!getToken();
 }
 
-// Redirigir a login si no está autenticado
 function requireAuth() {
   if (!isAuthenticated()) {
     window.location.href = 'login.html';
@@ -86,6 +85,31 @@ async function createContenido(formData) {
   return data;
 }
 
+async function getContenidoAdmin(id) {
+  return apiCall(`/contenido/admin/${encodeURIComponent(id)}`);
+}
+
+async function updateContenidoAdmin(id, formData) {
+  const response = await fetch(`${API_BASE_URL}/contenido/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    logout();
+    throw new Error('Session expired');
+  }
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Error updating content');
+  return data;
+}
+
+async function deleteContenidoAdmin(id) {
+  return apiCall(`/contenido/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 // GET - obtener contenido
 async function getContenido(params = {}) {
   const query = new URLSearchParams(params).toString();
@@ -97,7 +121,7 @@ async function getMisContenidos(autorId) {
   return apiCall(`/contenido/mis-contenidos/${autorId}`);
 }
 
-// GET - pendientes aprobación
+// GET - pendientes aprobacion
 async function getPendientes() {
   return apiCall('/contenido/pendientes');
 }
@@ -118,13 +142,13 @@ async function rechazarContenido(id, comentario = '') {
   });
 }
 
-// GET - galería
+// GET - galeria
 async function getGaleria(params = {}) {
   const query = new URLSearchParams(params).toString();
   return apiCall(`/galeria?${query}`);
 }
 
-// POST - subir fotos galería
+// POST - subir fotos galeria
 async function uploadGaleria(formData) {
   const url = `${API_BASE_URL}/galeria`;
   const token = getToken();
@@ -150,6 +174,18 @@ async function uploadGaleria(formData) {
   return data;
 }
 
+async function deleteGaleria(id) {
+  return apiCall(`/galeria/${id}`, { method: 'DELETE' });
+}
+
+async function getRevistas() {
+  return apiCall('/revistas');
+}
+
+async function deleteRevista(id) {
+  return apiCall(`/revistas/${id}`, { method: 'DELETE' });
+}
+
 async function uploadContenidoArchivos(contenidoId, formData) {
   const response = await fetch(`${API_BASE_URL}/contenido/${contenidoId}/archivos`, {
     method: 'POST',
@@ -161,8 +197,19 @@ async function uploadContenidoArchivos(contenidoId, formData) {
   return data;
 }
 
+async function deleteContenidoArchivo(contenidoId, archivoId) {
+  return apiCall(`/contenido/${encodeURIComponent(contenidoId)}/archivos/${encodeURIComponent(archivoId)}`, {
+    method: 'DELETE',
+  });
+}
+
 async function getCapitulos() {
   return apiCall('/capitulos');
+}
+
+// Admin version: returns ALL chapters including hidden/inactive
+async function getCapitulosAdmin() {
+  return apiCall('/capitulos?all=1');
 }
 
 async function getCapitulo(slug) {
@@ -205,6 +252,45 @@ async function updateUsuarioPassword(id, password) {
   });
 }
 
+async function deleteUsuario(id) {
+  return apiCall(`/auth/users/${id}`, { method: 'DELETE' });
+}
+
+async function updateUsuario(id, payload) {
+  return apiCall(`/auth/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function getSiteSettings() {
+  return apiCall('/site-settings');
+}
+
+async function updateSiteSettings(settings) {
+  return apiCall('/site-settings', {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  });
+}
+
+// ==================== FAQ API ====================
+async function getFaqAdmin() {
+  return apiCall('/faq/admin');
+}
+
+async function createFaq(payload) {
+  return apiCall('/faq', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+async function updateFaq(id, payload) {
+  return apiCall(`/faq/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+async function deleteFaq(id) {
+  return apiCall(`/faq/${id}`, { method: 'DELETE' });
+}
+
 // ==================== UTILITY FUNCTIONS ====================
 function showStatus(elementId, message, type = 'success') {
   const element = document.getElementById(elementId);
@@ -236,8 +322,6 @@ function formatDateTime(dateString) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -251,5 +335,121 @@ function escapeHTML(value) {
   }[char]));
 }
 
-// ==================== EXPORT ====================
-// Las funciones están disponibles globalmente en el scope del navegador
+// ==================== TOAST NOTIFICATIONS ====================
+function toast(message, type = 'success', duration = 3500) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const icons = { success: '\u2713', error: '\u2715', info: '\u2139' };
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML =
+    '<span class="toast-icon">' + (icons[type] || icons.info) + '</span>' +
+    '<span class="toast-msg">' + escapeHTML(message) + '</span>' +
+    '<button class="toast-close" onclick="this.parentElement.remove()">\u00d7</button>';
+  container.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('toast-visible'));
+  setTimeout(() => {
+    t.classList.remove('toast-visible');
+    setTimeout(() => t.remove(), 300);
+  }, duration);
+}
+
+function showConfirm(message, title = 'Confirmar Acci\u00f3n') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    if (!modal) return resolve(confirm(message));
+
+    document.getElementById('confirmModalTitle').textContent = title;
+    document.getElementById('confirmModalMessage').textContent = message;
+
+    const btnCancel = document.getElementById('confirmModalCancelBtn');
+    const btnAccept = document.getElementById('confirmModalAcceptBtn');
+
+    const cleanup = () => {
+      modal.classList.add('hidden');
+      btnCancel.onclick = null;
+      btnAccept.onclick = null;
+    };
+
+    btnCancel.onclick = (e) => {
+      e.preventDefault();
+      cleanup();
+      resolve(false);
+    };
+
+    btnAccept.onclick = (e) => {
+      e.preventDefault();
+      cleanup();
+      resolve(true);
+    };
+
+    modal.classList.remove('hidden');
+  });
+}
+
+// ==================== PATCH: handleResetPassword modal ====================
+// Override the native prompt() based password reset with an in-page modal.
+// This is loaded before dashboard.js so window.handleResetPassword will be
+// redefined after dashboard.js loads. We use a DOMContentLoaded hook to
+// ensure the override fires after dashboard.js has set up its version.
+document.addEventListener('DOMContentLoaded', function() {
+  window.handleResetPassword = async function(usuarioId) {
+    return new Promise(function(resolve) {
+      var modal     = document.getElementById('confirmModal');
+      var titleEl   = document.getElementById('confirmModalTitle');
+      var msgEl     = document.getElementById('confirmModalMessage');
+      var acceptBtn = document.getElementById('confirmModalAcceptBtn');
+      var cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+      if (!modal) {
+        var pwd = prompt('Nueva contrase\u00f1a (m\u00edn. 6 caracteres):');
+        if (!pwd || pwd.length < 6) { resolve(); return; }
+        updateUsuarioPassword(usuarioId, pwd)
+          .then(function() { toast('Contrase\u00f1a actualizada', 'success'); })
+          .catch(function(e) { toast('Error: ' + e.message, 'error'); });
+        resolve(); return;
+      }
+
+      titleEl.textContent = 'Cambiar Contrase\u00f1a';
+      msgEl.innerHTML =
+        '<div style="text-align:left;">' +
+          '<label style="display:block;margin-bottom:8px;font-size:.85rem;font-weight:600;">Nueva contrase\u00f1a (m\u00edn. 6 caracteres)</label>' +
+          '<input id="_pwdInput" type="password" autocomplete="new-password" ' +
+            'style="width:100%;padding:9px 12px;border:1px solid var(--border-card);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:.9rem;" ' +
+            'placeholder="Nueva contrase\u00f1a">' +
+        '</div>';
+      acceptBtn.textContent = 'Cambiar clave';
+      acceptBtn.className   = 'btn-primary';
+      modal.classList.remove('hidden');
+      setTimeout(function() { var el = document.getElementById('_pwdInput'); if (el) el.focus(); }, 80);
+
+      function cleanup() {
+        modal.classList.add('hidden');
+        msgEl.textContent     = '\u00bfEst\u00e1s seguro?';
+        titleEl.textContent   = 'Confirmar Acci\u00f3n';
+        acceptBtn.textContent = 'Aceptar';
+        acceptBtn.className   = 'btn-primary danger';
+        acceptBtn.onclick = null;
+        cancelBtn.onclick = null;
+      }
+
+      acceptBtn.onclick = async function() {
+        var el  = document.getElementById('_pwdInput');
+        var pwd = el ? el.value : '';
+        if (pwd.length < 6) { toast('La contrase\u00f1a debe tener al menos 6 caracteres.', 'error'); return; }
+        cleanup();
+        try {
+          await updateUsuarioPassword(usuarioId, pwd);
+          toast('Contrase\u00f1a actualizada correctamente', 'success');
+        } catch (err) { toast('Error: ' + err.message, 'error'); }
+        resolve();
+      };
+      cancelBtn.onclick = function() { cleanup(); resolve(); };
+    });
+  };
+}, { once: true });

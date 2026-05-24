@@ -14,11 +14,15 @@ function canEditChapter(user, chapter) {
   return user.rol === 'director_capitulo' && user.capitulo === chapter.slug;
 }
 
+// Public list — only active chapters
 const listCapitulos = (req, res) => {
+  // If ?all=1 is sent and user is authenticated as admin, return all chapters
+  const showAll = req.query.all === '1';
+  const whereClause = showAll ? '' : 'WHERE activo = 1';
   db.all(
-    `SELECT id, slug, nombre, siglas, descripcion_corta, logo_path, imagen_portada_path, color
+    `SELECT id, slug, nombre, siglas, descripcion_corta, logo_path, imagen_portada_path, color, activo
      FROM capitulo_detalle
-     WHERE activo = 1
+     ${whereClause}
      ORDER BY nombre ASC`,
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -70,7 +74,11 @@ const updateCapitulo = async (req, res) => {
       vision,
       fecha_fundacion,
       activo,
+      visible, // alias for activo from admin UI
     } = req.body;
+
+    // Support both 'activo' and 'visible' field names from admin
+    const activoValue = typeof visible !== 'undefined' ? visible : activo;
 
     let nextSlug = capitulo.slug;
     if (req.user.rol === 'director_rama' && nombre && nombre !== capitulo.nombre) {
@@ -101,7 +109,7 @@ const updateCapitulo = async (req, res) => {
         mision,
         vision,
         fecha_fundacion,
-        typeof activo === 'undefined' ? null : activo ? 1 : 0,
+        typeof activoValue === 'undefined' ? null : activoValue ? 1 : 0,
         capitulo.id,
       ],
       (updateErr) => {

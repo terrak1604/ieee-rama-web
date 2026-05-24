@@ -1,11 +1,13 @@
-/**
+﻿/**
  * IEEE Rama General UNMSM - JavaScript Principal
  * Carga dinámica de datos JSON, partículas avanzadas, animaciones y navegación
  */
 
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = window.API_BASE_URL || window.location.origin + '/api';
 const UPLOADS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 const IEEE_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 fill=%22%2300629B%22/%3E%3Ctext x=%22600%22 y=%22320%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%22116%22 font-weight=%22700%22 fill=%22white%22%3EIEEE%3C/text%3E%3Ctext x=%22600%22 y=%22405%22 text-anchor=%22middle%22 font-family=%22Arial%2C sans-serif%22 font-size=%2238%22 fill=%22white%22%3ERama Estudiantil UNMSM%3C/text%3E%3C/svg%3E';
+
+let _proyectosUpdateLimits = null;
 
 // ════════════════════════════════════════════════════════
 //  UI HELPERS
@@ -366,6 +368,7 @@ function initAdvancedCanvas() {
 
 // ── DOM Ready ──
 document.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
   initLoader();
   initAdvancedCanvas();
   initParticles();
@@ -384,6 +387,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initFAQ();
   initScrollAnimations();
 });
+
+// ── Dark Mode ──
+function initDarkMode() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+  const btn = document.getElementById('darkToggle');
+  if (!btn) return;
+
+  const moonSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  const sunSVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+
+  function updateIcon() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    btn.innerHTML = isDark ? sunSVG : moonSVG;
+    btn.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    btn.setAttribute('title', isDark ? 'Modo claro' : 'Modo oscuro');
+  }
+  updateIcon();
+
+  btn.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateIcon();
+  });
+}
 
 // ── Loader ──
 // El loader se oculta cuando ocurra el PRIMERO de:
@@ -502,6 +537,8 @@ async function loadCapitulos() {
     const res = await fetch(`${API_BASE_URL}/capitulos`);
     if (!res.ok) throw new Error('API not available');
     const capitulos = await res.json();
+    const statEl = document.getElementById('stat-capitulos');
+    if (statEl && capitulos.length) statEl.textContent = capitulos.length;
     const render = (list) => {
       if (!list.length) {
         renderEmptyState(container, 'No se encontraron capítulos con ese criterio.', '<i class="ph-fill ph-magnifying-glass"></i>');
@@ -536,6 +573,13 @@ function initCapitulosFilters(capitulos, render) {
     render(filtered);
   };
   search.addEventListener('input', apply);
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function escapeHTML(value) {
@@ -611,8 +655,19 @@ async function loadSiteImages() {
         }
       }
       if (img.clave === 'logo') {
-        const logoEl = document.querySelector('.nav-logo-img');
-        if (logoEl) {
+        const brandEl = document.querySelector('.nav-brand');
+        if (brandEl) {
+          let logoEl = brandEl.querySelector('img');
+          if (!logoEl) {
+            logoEl = document.createElement('img');
+            logoEl.className = 'nav-logo-img';
+            logoEl.style.maxHeight = '42px';
+            brandEl.insertBefore(logoEl, brandEl.firstChild);
+            
+            // Ocultar texto por defecto si hay logo
+            const textDiv = brandEl.querySelector('div');
+            if (textDiv) textDiv.style.display = 'none';
+          }
           logoEl.src = url;
           logoEl.onerror = () => { logoEl.src = IEEE_FALLBACK_IMAGE; };
         }
@@ -668,6 +723,7 @@ function createRevistaCard(r) {
 
   return `
   <div class="revista-card">
+    <a href="${escapeAttribute(pdfUrl)}" target="_blank" rel="noopener" class="card-full-link" aria-label="${titulo}"></a>
     <div class="revista-portada">
       ${portadaUrl
         ? `<img src="${escapeAttribute(portadaUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">`
@@ -680,37 +736,53 @@ function createRevistaCard(r) {
     <div class="revista-body">
       <span class="revista-edicion">Edición ${edicion}</span>
       <h3 class="revista-titulo">${titulo}</h3>
-      <p class="revista-fecha">📅 ${fecha}</p>
+      <p class="revista-fecha">${fecha}</p>
       ${descripcion ? `<p class="revista-desc">${descripcion}</p>` : ''}
-      <a href="${escapeAttribute(pdfUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">📄 Leer revista</a>
+      
+      <div class="card-hover-actions">
+        <button class="btn-share" style="background:var(--ieee-gold);color:#000;"><i data-lucide="book-open"></i> Leer PDF</button>
+      </div>
     </div>
   </div>`;
 }
 
 function createCapituloCard(cap) {
-  const id = escapeHTML(cap.id || cap.slug);
+  const id = escapeHTML(cap.id || cap.slug || '');
   const color = sanitizeColor(cap.color);
-  const siglas = escapeHTML(cap.siglas);
-  const nombre = escapeHTML(cap.nombre);
-  const descripcion = escapeHTML(cap.descripcion || cap.descripcion_corta);
+  const siglas = escapeHTML(cap.siglas || cap.sigla || (cap.nombre ? cap.nombre.slice(0,4) : 'IEEE'));
+  const nombre = escapeHTML(cap.nombre || '');
+  const descripcion = escapeHTML(cap.descripcion || cap.descripcion_corta || '');
   const icono = escapeHTML(cap.icono || cap.siglas || 'IEEE');
   const link = escapeAttribute(chapterDetailLink(cap));
 
+  // Preferir imagen de portada (cover) sobre logo (contain)
+  const portadaUrl = resolveImageUrl(cap.imagen_portada_path);
+  const logoUrl    = resolveImageUrl(cap.logo_path);
+  const mainImg    = portadaUrl || logoUrl;
+  const imgCls     = portadaUrl ? 'cap-img-cover' : 'cap-img-logo';
+
+  const imgContent = mainImg
+    ? `<img src="${escapeAttribute(mainImg)}" onload="if(window.handleCardImageLoad) window.handleCardImageLoad(this)" alt="${nombre}" class="${imgCls}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
+       <div class="cap-img-gradient"></div>`
+    : `<div class="cap-placeholder" style="background:linear-gradient(135deg,rgba(0,15,40,0.95),${color}44)">
+         <span class="cap-icon">${icono}</span>
+         <span class="cap-placeholder-text">Sin imagen</span>
+       </div>`;
+
   return `
   <div class="capitulo-card" data-cap="${id}">
-    <div class="cap-img-wrapper" style="border-top: 3px solid ${color}">
-      <div class="cap-placeholder" style="background: linear-gradient(135deg, rgba(0,20,45,0.9), ${color}18)">
-        <span class="cap-icon">${icono}</span>
-        <span class="cap-placeholder-text">Agregar imagen en images/capitulos/${id}.jpg</span>
-      </div>
-      <span class="cap-siglas-badge" style="border-color:${color};color:${color}">${siglas}</span>
+    <a href="${link}" class="card-full-link" aria-label="${nombre}"></a>
+    <div class="cap-img-wrapper" style="--cap-color:${color}">
+      ${imgContent}
+      <span class="cap-siglas-badge" style="border-color:${color}55;color:#fff">${siglas}</span>
     </div>
     <div class="cap-body">
       <h3 class="cap-nombre">${nombre}</h3>
       <p class="cap-desc">${descripcion}</p>
-      <a href="${link}" class="cap-link">
-        Más información <span>→</span>
-      </a>
+      
+      <div class="card-hover-actions">
+        <button class="btn-share" style="background:${color};color:#fff;"><i data-lucide="arrow-right"></i> Ver Capítulo</button>
+      </div>
     </div>
   </div>`;
 }
@@ -739,26 +811,33 @@ async function loadNoticias() {
       fecha: n.created_at || n.fecha,
       categoria: n.categoria || 'noticia',
       descripcion: n.descripcion || n.extracto,
-      imagen: n.imagen_path || 'placeholder.jpg',
+      imagen: n.imagen_path || null,
       link: contentDetailLink(n),
-      destacado: false
+      destacado: false,
+      vistas: n.vistas || 0,
+      autor_nombre: n.autor_nombre || 'Equipo IEEE'
     }));
 
     // Orden por fecha descendente
     noticias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-    const render = (list) => {
+    const PER_PAGE_N = 8;
+    const render = (list, page = 1) => {
       if (!list.length) {
         container.innerHTML = '<p class="no-results">No hay noticias para esta categoría.</p>';
+        renderPagination('noticias-pagination', 0, 1, PER_PAGE_N, () => {});
         return;
       }
-      const destacada = list.find(n => n.destacado) || list[0];
-      const resto = list.filter(n => n.id !== destacada?.id);
+      const start = (page - 1) * PER_PAGE_N;
+      const sliced = list.slice(start, start + PER_PAGE_N);
+      const destacada = sliced.find(n => n.destacado) || sliced[0];
+      const resto = sliced.filter(n => n.id !== destacada?.id);
       let html = '';
       if (destacada) html += createNoticiaCard(destacada, true);
       resto.forEach(n => { html += createNoticiaCard(n, false); });
       container.innerHTML = html;
       animateCards(container.querySelectorAll('.noticia-card'));
+      renderPagination('noticias-pagination', list.length, page, PER_PAGE_N, newPage => render(list, newPage));
     };
 
     if (mode === 'full') {
@@ -775,6 +854,39 @@ async function loadNoticias() {
   }
 }
 
+function renderPagination(containerId, total, currentPage, perPage, onPageChange) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const totalPages = Math.ceil(total / perPage);
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+  const mkBtn = (page, label, disabled, active) =>
+    `<button class="page-btn${active ? ' active' : ''}" data-page="${page}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+
+  let pages = '';
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1) {
+      pages += mkBtn(p, p, false, p === currentPage);
+    } else if (Math.abs(p - currentPage) === 2) {
+      pages += '<span class="page-ellipsis">…</span>';
+    }
+  }
+
+  el.innerHTML = `<div class="pagination">
+    ${mkBtn(currentPage - 1, '‹ Anterior', currentPage === 1, false)}
+    ${pages}
+    ${mkBtn(currentPage + 1, 'Siguiente ›', currentPage === totalPages, false)}
+  </div>`;
+
+  el.querySelectorAll('.page-btn:not([disabled])').forEach(b => {
+    b.addEventListener('click', () => {
+      onPageChange(parseInt(b.dataset.page, 10));
+      const section = document.querySelector('[aria-label="Listado de noticias"], [aria-label="Listado de concursos"]');
+      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
 function initNoticiasFilters(noticias, render) {
   const chips = document.querySelectorAll('[data-noticias-filter] .chip');
   if (!chips.length) return;
@@ -786,6 +898,54 @@ function initNoticiasFilters(noticias, render) {
       const list = (cat === 'all') ? noticias : noticias.filter(n => n.categoria === cat);
       render(list);
     });
+  });
+}
+
+function initProyectosFilters(proyectos, render) {
+  const caps = [...new Set(proyectos.map(p => p.capitulo).filter(Boolean))].sort();
+  const chipsContainer = document.getElementById('proyectos-caps');
+  if (chipsContainer) {
+    chipsContainer.innerHTML =
+      '<button class="chip active" data-cap="all">Todos</button>' +
+      caps.map(c => `<button class="chip" data-cap="${escapeAttribute(c)}">${escapeHTML(c)}</button>`).join('');
+  }
+
+  const searchInput = document.getElementById('proyectos-search');
+  let activeCapitulo = 'all';
+  let searchTerm = '';
+
+  function apply() {
+    let list = proyectos;
+    if (activeCapitulo !== 'all') list = list.filter(p => p.capitulo === activeCapitulo);
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(p =>
+        p.titulo.toLowerCase().includes(q) ||
+        (p.descripcion || '').toLowerCase().includes(q) ||
+        (p.capitulo || '').toLowerCase().includes(q)
+      );
+    }
+    if (!list.length) {
+      const container = document.getElementById('proyectos-container');
+      if (container) container.innerHTML = '<p class="no-results">No hay proyectos que coincidan.</p>';
+    } else {
+      render(list);
+    }
+    setTimeout(() => _proyectosUpdateLimits?.(), 200);
+  }
+
+  chipsContainer?.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    chipsContainer.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeCapitulo = chip.dataset.cap;
+    apply();
+  });
+
+  searchInput?.addEventListener('input', e => {
+    searchTerm = e.target.value.trim();
+    apply();
   });
 }
 
@@ -813,30 +973,31 @@ async function loadProyectos() {
       descripcion: p.descripcion || p.extracto,
       imagen: p.imagen_path || p.imagen || null,
       link: contentDetailLink(p),
-      capitulo: p.capitulo || 'General'
+      capitulo: p.capitulo || 'General',
+      vistas: p.vistas || 0,
+      autor_nombre: p.autor_nombre || 'Equipo IEEE'
     }));
 
     // Orden por fecha descendente
     proyectos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-    const render = (list) => {
-      // Si la lista está vacía de la BD, mostramos los proyectos de demostración automáticamente para testing
-      if (!list.length) {
-        throw new Error('No hay proyectos en la BD, forzando carga de demostración');
+    if (proyectos.length) {
+      const render = (list) => {
+        container.innerHTML = list.map(p => createProyectoCard(p)).join('');
+        animateCards(container.querySelectorAll('.proyecto-card'));
+      };
+      if (mode === 'full') {
+        container.classList.add('full');
+        render(proyectos);
+        initProyectosFilters(proyectos, render);
+      } else {
+        render(proyectos.slice(0, 3));
       }
-      container.innerHTML = list.map(p => createProyectoCard(p)).join('');
-      animateCards(container.querySelectorAll('.proyecto-card'));
-    };
-
-    if (mode === 'full') {
-      container.classList.add('full');
-      render(proyectos);
-    } else {
-      const previewLimit = Math.min(3, proyectos.length);
-      render(proyectos.slice(0, previewLimit));
+      return;
     }
+    // Fallback demo cuando la BD está vacía
   } catch (err) {
-    console.warn('Error cargando proyectos o usando entorno local. Cargando proyectos de demostración:', err);
+    console.warn('Error cargando proyectos desde API, usando datos de demostración:', err);
     // Fallback con proyectos de demostración para visualización
     const demoProyectos = [
       {
@@ -846,7 +1007,7 @@ async function loadProyectos() {
         descripcion: "Diseño y desarrollo de un rover autónomo con visión artificial y algoritmos de machine learning para mapeo de terrenos simulados en entornos hostiles. Ganador del premio nacional de robótica IEEE.",
         capitulo: "IEEE RAS",
         imagen: "https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&q=80&w=1600",
-        link: "#"
+        link: "contenido-detalle.html?id=demo"
       },
       {
         id: 2,
@@ -855,7 +1016,7 @@ async function loadProyectos() {
         descripcion: "Brazo robótico impreso en 3D que responde a señales electroencefalográficas (EEG) en tiempo real, permitiendo a personas amputadas recuperar motricidad fina con un coste reducido al 10%.",
         capitulo: "IEEE EMBS",
         imagen: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1600",
-        link: "#"
+        link: "contenido-detalle.html?id=demo"
       },
       {
         id: 3,
@@ -864,7 +1025,7 @@ async function loadProyectos() {
         descripcion: "Sistema de gestión de energía basado en IoT y micro-controladores para comunidades rurales aisladas. Permite balancear cargas de paneles solares entre múltiples hogares automáticamente.",
         capitulo: "IEEE PES",
         imagen: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&q=80&w=1600",
-        link: "#"
+        link: "contenido-detalle.html?id=demo"
       },
       {
         id: 4,
@@ -873,7 +1034,7 @@ async function loadProyectos() {
         descripcion: "Módulos de comunicación LoRaWAN que monitorean la humedad, temperatura y pH del suelo. Los datos se envían a una plataforma web que predice y optimiza los ciclos de riego mediante IA.",
         capitulo: "IEEE ComSoc",
         imagen: "https://images.unsplash.com/photo-1586771107445-d3af9e11fb98?auto=format&fit=crop&q=80&w=1600",
-        link: "#"
+        link: "contenido-detalle.html?id=demo"
       },
       {
         id: 5,
@@ -882,7 +1043,7 @@ async function loadProyectos() {
         descripcion: "Plataforma de código abierto capaz de detectar intrusiones en redes institucionales usando aprendizaje profundo y neutralizar ataques DDoS en menos de 5 segundos.",
         capitulo: "IEEE CS",
         imagen: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1600",
-        link: "#"
+        link: "contenido-detalle.html?id=demo"
       }
     ];
 
@@ -894,6 +1055,7 @@ async function loadProyectos() {
     if (mode === 'full') {
       container.classList.add('full');
       render(demoProyectos);
+      initProyectosFilters(demoProyectos, render);
     } else {
       render(demoProyectos.slice(0, 3));
     }
@@ -915,7 +1077,8 @@ function initHorizontalScroll() {
     // El límite es el ancho total menos la pantalla, más un pequeño margen
     maxScroll = Math.max(0, container.clientWidth - window.innerWidth + (window.innerWidth * 0.1));
   }
-  
+  _proyectosUpdateLimits = updateLimits;
+
   // Inicializar y recalcular si cambia el tamaño de pantalla
   setTimeout(updateLimits, 500); // Dar tiempo a que las imágenes carguen
   window.addEventListener('resize', updateLimits);
@@ -995,21 +1158,30 @@ function createProyectoCard(p) {
 
   return `
   <div class="proyecto-card">
+    <a href="${link}" class="card-full-link" aria-label="${titulo}"></a>
     <div class="proyecto-img">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
-      <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
+      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" onload="if(window.handleCardImageLoad) window.handleCardImageLoad(this)" alt="${titulo}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      <div class="img-placeholder" style="${imgUrl ? 'display:none' : ''}">
         <span class="img-icon"><i class="ph-fill ph-rocket-launch"></i></span>
-        <span class="img-text">Proyecto: ${titulo}</span>
+        <span class="img-text">Proyecto:<br>${titulo}</span>
       </div>
     </div>
     <div class="proyecto-body">
       <div class="proyecto-meta">
-        <span class="proyecto-capitulo">🏷️ ${capitulo}</span>
-        <span class="proyecto-fecha">📅 ${fecha}</span>
+        <span class="proyecto-capitulo">${capitulo}</span>
+        <span class="proyecto-fecha">${fecha}</span>
       </div>
       <h3 class="proyecto-titulo">${titulo}</h3>
       <p class="proyecto-desc">${descripcion}</p>
-      <a href="${link}" class="proyecto-link">Más información <span>→</span></a>
+      
+      <div class="card-footer-meta">
+        ${p.vistas ? `<span><i data-lucide="eye"></i> ${p.vistas}</span>` : ''}
+        ${p.autor_nombre ? `<span><i data-lucide="user"></i> ${p.autor_nombre}</span>` : ''}
+      </div>
+      
+      <div class="card-hover-actions">
+        <button class="btn-share" onclick="event.preventDefault(); navigator.share && navigator.share({title: '${titulo}', url: window.location.origin+'${link}'})"><i data-lucide="share-2"></i> Compartir</button>
+      </div>
     </div>
   </div>`;
 }
@@ -1026,21 +1198,30 @@ function createNoticiaCard(n, destacada) {
 
   return `
   <div class="noticia-card${destacada ? ' destacada' : ''}">
+    <a href="${link}" class="card-full-link" aria-label="${titulo}"></a>
     <div class="noticia-img">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
+      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" onload="if(window.handleCardImageLoad) window.handleCardImageLoad(this)" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : ''}
       <div class="img-placeholder" ${imgUrl ? 'class="img-placeholder img-placeholder-hidden"' : 'class="img-placeholder"'}>
-        <span class="img-icon"><i class="ph-fill ph-image"></i></span>
+        <span class="img-icon"><i class="ph-fill ph-newspaper"></i></span>
         <span class="img-text">${titulo}</span>
       </div>
     </div>
     <div class="noticia-body">
       <div class="noticia-meta">
         <span class="noticia-cat" style="background:${color}22;color:${color};border:1px solid ${color}44">${categoria}</span>
-        <span class="noticia-fecha">📅 ${fecha}</span>
+        <span class="noticia-fecha">${fecha}</span>
       </div>
       <h3 class="noticia-titulo">${titulo}</h3>
       <p class="noticia-desc">${descripcion}</p>
-      <a href="${link}" class="noticia-link">Leer más <span>→</span></a>
+      
+      <div class="card-footer-meta">
+        ${n.vistas ? `<span><i data-lucide="eye"></i> ${n.vistas}</span>` : ''}
+        ${n.autor_nombre ? `<span><i data-lucide="user"></i> ${n.autor_nombre}</span>` : ''}
+      </div>
+      
+      <div class="card-hover-actions">
+        <button class="btn-share" onclick="event.preventDefault(); navigator.share && navigator.share({title: '${titulo}', url: window.location.origin+'${link}'})"><i data-lucide="share-2"></i> Compartir</button>
+      </div>
     </div>
   </div>`;
 }
@@ -1072,18 +1253,25 @@ async function loadConcursos() {
       requisitos: '',
       imagen: c.imagen_path || null,
       link: contentDetailLink(c),
-      bases: '#',
+      enlace_externo: c.link || '',
       capitulo: c.capitulo || 'Rama General',
-      convocatoria: c.fecha_evento ? 'Próximo' : 'Abierta'
+      convocatoria: c.fecha_evento ? 'Próximo' : 'Abierta',
+      vistas: c.vistas || 0,
+      autor_nombre: c.autor_nombre || 'Equipo IEEE'
     }));
 
-    const render = (list) => {
+    const PER_PAGE_C = 8;
+    const render = (list, page = 1) => {
       if (!list.length) {
         container.innerHTML = '<p class="no-results">No hay convocatorias en este estado.</p>';
+        renderPagination('concursos-pagination', 0, 1, PER_PAGE_C, () => {});
         return;
       }
-      container.innerHTML = list.map(c => createConcursoCard(c, mode === 'full')).join('');
+      const start = (page - 1) * PER_PAGE_C;
+      const sliced = list.slice(start, start + PER_PAGE_C);
+      container.innerHTML = sliced.map(c => createConcursoCard(c, mode === 'full')).join('');
       animateCards(container.querySelectorAll('.concurso-card'));
+      renderPagination('concursos-pagination', list.length, page, PER_PAGE_C, newPage => render(list, newPage));
     };
 
     if (mode === 'full') {
@@ -1123,20 +1311,27 @@ function createConcursoCard(c, full = false) {
   const requisitosText = escapeHTML(c.requisitos);
   const capitulo = escapeHTML(c.capitulo || 'Rama General');
   const link = escapeAttribute(c.link || '#');
-  const bases = escapeAttribute(c.bases || '#');
+  const enlaceExterno = c.enlace_externo ? escapeAttribute(c.enlace_externo) : '';
   const imgUrl = resolveImageUrl(c.imagen);
   const imgSection = imgUrl ? `
     <div class="concurso-img">
-      <img src="${escapeAttribute(imgUrl)}" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
-    </div>` : '';
+      <img src="${escapeAttribute(imgUrl)}" onload="if(window.handleCardImageLoad) window.handleCardImageLoad(this)" alt="${titulo}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
+    </div>` : `
+    <div class="concurso-img">
+      <div class="img-placeholder">
+        <span class="img-icon"><i class="ph-fill ph-calendar-star"></i></span>
+        <span class="img-text">${titulo}</span>
+      </div>
+    </div>`;
   const meta = full ? `
     <div class="concurso-meta-row">
-      <span>🏷️ ${capitulo}</span>
+      <span>${capitulo}</span>
     </div>` : '';
   const requisitos = full && c.requisitos ? `
     <div class="concurso-requisitos"><strong>Requisitos:</strong> ${requisitosText}</div>` : '';
   return `
   <div class="concurso-card${full ? ' full' : ''}">
+    <a href="${link}" class="card-full-link" aria-label="${titulo}"></a>
     ${imgSection}
     <div class="concurso-header">
       <h3 class="concurso-titulo">${titulo}</h3>
@@ -1145,10 +1340,16 @@ function createConcursoCard(c, full = false) {
     ${meta}
     <p class="concurso-desc">${descripcion}</p>
     ${requisitos}
-    <div class="concurso-fecha">⏰ Fecha límite: ${fechaStr}</div>
-    <div class="concurso-actions">
-      <a href="${link}" class="btn btn-primary btn-sm">Leer más</a>
-      <a href="${bases}" class="btn btn-outline btn-sm">Ver bases</a>
+    <div class="concurso-fecha">Fecha: ${fechaStr}</div>
+    
+    <div class="card-footer-meta">
+      ${c.vistas ? `<span><i data-lucide="eye"></i> ${c.vistas}</span>` : ''}
+      ${c.autor_nombre ? `<span><i data-lucide="user"></i> ${c.autor_nombre}</span>` : ''}
+    </div>
+    
+    <div class="card-hover-actions">
+      ${enlaceExterno ? `<a href="${enlaceExterno}" class="btn-share" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Enlace</a>` : ''}
+      <button class="btn-share" onclick="event.preventDefault(); navigator.share && navigator.share({title: '${titulo}', url: window.location.origin+'${link}'})"><i data-lucide="share-2"></i> Compartir</button>
     </div>
   </div>`;
 }
@@ -1242,59 +1443,7 @@ async function loadCapituloDetalle() {
   }
 }
 
-async function loadContenidoDetalle() {
-  const root = document.getElementById('contenido-detail-root');
-  if (!root) return;
-
-  const slug = new URLSearchParams(window.location.search).get('slug');
-  if (!slug) {
-    root.innerHTML = '<section><div class="container"><p class="no-results">No se indicó un contenido.</p></div></section>';
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/contenido/${encodeURIComponent(slug)}`);
-    if (!res.ok) throw new Error('Contenido not found');
-    const item = await res.json();
-    const fecha = safeParseDate(item.fecha_evento || item.publicado_at || item.created_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
-    const hero = resolveImageUrl(item.imagen_path) || IEEE_FALLBACK_IMAGE;
-    const archivos = item.archivos || [];
-    const imagenes = archivos.filter(file => file.tipo === 'imagen');
-    const documentos = archivos.filter(file => file.tipo === 'documento');
-
-    root.innerHTML = `
-      <header class="page-header article-header">
-        <div class="container">
-          <nav class="breadcrumb" aria-label="Ruta de navegación">
-            <a href="index.html">Inicio</a><span class="sep">›</span><span>${escapeHTML(item.tipo)}</span>
-          </nav>
-          <div class="article-tags">
-            <span>${escapeHTML(item.tipo)}</span>
-            <span>${escapeHTML(item.capitulo || 'Rama IEEE')}</span>
-            <span>${fecha}</span>
-          </div>
-          <h1 class="page-title">${escapeHTML(item.titulo)}</h1>
-          <p class="page-subtitle">${escapeHTML(item.extracto || item.descripcion || '')}</p>
-        </div>
-      </header>
-      <section>
-        <div class="container article-layout">
-          <article class="article-content">
-            <img src="${escapeAttribute(hero)}" alt="${escapeHTML(item.titulo)}" class="article-featured" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
-            <div class="article-body">${item.cuerpo || `<p>${escapeHTML(item.descripcion || '')}</p>`}</div>
-            ${imagenes.length ? `<h2>Galería</h2><div class="article-gallery">${imagenes.map(file => `
-              <img src="${escapeAttribute(resolveImageUrl(file.archivo_path) || IEEE_FALLBACK_IMAGE)}" alt="${escapeHTML(file.caption || file.nombre_original || item.titulo)}" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">
-            `).join('')}</div>` : ''}
-            ${documentos.length ? `<h2>Documentos</h2><div class="document-list">${documentos.map(file => `
-              <a href="${escapeAttribute(resolveImageUrl(file.archivo_path) || '#')}" target="_blank" rel="noopener">${escapeHTML(file.nombre_original || 'Documento adjunto')}</a>
-            `).join('')}</div>` : ''}
-          </article>
-        </div>
-      </section>`;
-  } catch (err) {
-    root.innerHTML = '<section><div class="container"><p class="no-results">No se pudo cargar el contenido.</p></div></section>';
-  }
-}
+// (La función loadContenidoDetalle antigua ha sido eliminada; se utiliza la versión unificada al final del archivo)
 
 // ── Galería (carga dinámica desde API + fallback) ──
 async function initGaleria() {
@@ -1320,17 +1469,53 @@ async function initGaleria() {
     return;
   }
 
-  const items = (mode === 'full') ? fotos : fotos.slice(0, 8);
-  container.innerHTML = items.map((foto, i) => {
-    const imgUrl = resolveImageUrl(foto.path);
-    const label = escapeHTML(foto.evento || foto.capitulo || 'Foto IEEE');
-    return `
-    <div class="galeria-item${i === 0 ? ' large' : ''}" data-idx="${i}" data-label="${escapeAttribute(label)}" data-src="${escapeAttribute(imgUrl || '')}">
-      ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" alt="${label}" loading="lazy" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : '<span class="galeria-icon">🖼️</span>'}
-      <span class="galeria-overlay">${label}</span>
-    </div>`;
-  }).join('');
-  animateCards(container.querySelectorAll('.galeria-item'));
+  const renderFotoItems = (items) => {
+    container.innerHTML = items.map((foto, i) => {
+      const imgUrl = resolveImageUrl(foto.path);
+      const label = escapeHTML(foto.evento || foto.capitulo || 'Foto IEEE');
+      return `
+      <div class="galeria-item${i === 0 ? ' large' : ''}" data-idx="${i}" data-label="${escapeAttribute(label)}" data-src="${escapeAttribute(imgUrl || '')}">
+        ${imgUrl ? `<img src="${escapeAttribute(imgUrl)}" onload="if(window.handleCardImageLoad) window.handleCardImageLoad(this)" alt="${label}" loading="lazy" onerror="this.src='${IEEE_FALLBACK_IMAGE}'">` : '<span class="galeria-icon">🖼️</span>'}
+        <span class="galeria-overlay">${label}</span>
+      </div>`;
+    }).join('');
+    animateCards(container.querySelectorAll('.galeria-item'));
+  };
+
+  if (mode === 'full') {
+    // Agrupar por álbum (campo evento)
+    const albums = {};
+    fotos.forEach(f => {
+      const key = f.evento || f.capitulo || 'General';
+      if (!albums[key]) albums[key] = [];
+      albums[key].push(f);
+    });
+    const albumKeys = Object.keys(albums).sort();
+
+    // Mostrar filtro de álbumes si hay más de uno
+    if (albumKeys.length > 1) {
+      const filterEl = document.getElementById('galeria-album-filter');
+      const chipsEl = document.getElementById('galeria-album-chips');
+      if (filterEl && chipsEl) {
+        filterEl.style.display = '';
+        chipsEl.innerHTML =
+          '<button class="chip active" data-album="all">Todos los álbumes</button>' +
+          albumKeys.map(a => `<button class="chip" data-album="${escapeAttribute(a)}">${escapeHTML(a)} (${albums[a].length})</button>`).join('');
+        chipsEl.addEventListener('click', e => {
+          const chip = e.target.closest('.chip');
+          if (!chip) return;
+          chipsEl.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          const al = chip.dataset.album;
+          renderFotoItems(al === 'all' ? fotos : albums[al]);
+        });
+      }
+    }
+
+    renderFotoItems(fotos);
+  } else {
+    renderFotoItems(fotos.slice(0, 8));
+  }
 }
 
 // ── Animaciones de entrada ──
@@ -1454,6 +1639,10 @@ function initLightbox() {
 function initContactForm() {
   const form = document.getElementById('contact-form');
   if (!form) return;
+  
+  if (form.dataset.formInit) return;
+  form.dataset.formInit = 'true';
+  
   const status = form.querySelector('.form-status');
 
   form.addEventListener('submit', async (e) => {
@@ -1477,12 +1666,17 @@ function initContactForm() {
       
       if (res.ok) {
         showStatus(status, 'success', '¡Mensaje enviado! Te responderemos pronto.');
+        showToast('Mensaje enviado. Te responderemos pronto.', 'success');
         form.reset();
       } else {
-        showStatus(status, 'error', resData.error || 'Hubo un problema al enviar.');
+        const msg = resData.error || 'Hubo un problema al enviar.';
+        showStatus(status, 'error', msg);
+        showToast(msg, 'error');
       }
     } catch (err) {
-      showStatus(status, 'error', 'Error de conexión. Intenta más tarde.');
+      const msg = 'Error de conexión. Intenta más tarde.';
+      showStatus(status, 'error', msg);
+      showToast(msg, 'error');
     }
   });
 }
@@ -1493,18 +1687,94 @@ function showStatus(el, type, msg) {
   el.textContent = msg;
 }
 
+function showToast(message, type = 'info', duration = 3500) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = { success: '✓', error: '!', info: 'i' };
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${icons[type] || icons.info}</span>
+    <span class="toast-msg">${escapeHTML(message)}</span>
+    <button class="toast-close" type="button" aria-label="Cerrar">×</button>
+  `;
+
+  toast.querySelector('.toast-close')?.addEventListener('click', () => toast.remove());
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('toast-visible'));
+
+  window.setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    window.setTimeout(() => toast.remove(), 250);
+  }, duration);
+}
+
 // ════════════════════════════════════════════════════════
-//  FAQ ACCORDION
+//  FAQ ACCORDION — Carga dinámica desde API + fallback estático
 // ════════════════════════════════════════════════════════
-function initFAQ() {
-  document.querySelectorAll('.faq-item').forEach(item => {
-    const btn = item.querySelector('.faq-question');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      const isOpen = item.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(isOpen));
+async function initFAQ() {
+  const container = document.getElementById('faqList');
+
+  // Si hay un contenedor dinámico, cargar desde la API
+  if (container) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/faq`);
+      if (!res.ok) throw new Error('API no disponible');
+      const items = await res.json();
+
+      if (items.length) {
+        container.innerHTML = items.map(item => `
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>${escapeHTML(item.pregunta)}</span>
+              <span class="arrow">&#9662;</span>
+            </button>
+            <div class="faq-answer">${escapeHTML(item.respuesta)}</div>
+          </div>
+        `).join('');
+      } else {
+        container.innerHTML = '<p class="loading-text">No hay preguntas disponibles en este momento.</p>';
+      }
+    } catch (e) {
+      // Fallback: si la API falla, mostrar mensaje neutro
+      container.innerHTML = '<p class="loading-text">No se pudieron cargar las preguntas. Intenta más tarde.</p>';
+      console.warn('Error cargando FAQ:', e);
+    }
+  }
+
+  // Inicializar el acordeón (aplica a los items ya en DOM o recién renderizados)
+  function attachAccordion() {
+    document.querySelectorAll('.faq-item').forEach(item => {
+      if (item.dataset.faqInit) return;
+      item.dataset.faqInit = 'true';
+      const btn = item.querySelector('.faq-question');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const isOpen = item.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(isOpen));
+        document.querySelectorAll('.faq-item').forEach(other => {
+          if (other !== item) {
+            other.classList.remove('open');
+            const ob = other.querySelector('.faq-question');
+            if (ob) ob.setAttribute('aria-expanded', 'false');
+          }
+        });
+      });
     });
-  });
+  }
+
+  // Si se cargó desde API, necesitamos un tick para que el DOM esté listo
+  if (container) {
+    setTimeout(attachAccordion, 0);
+  } else {
+    attachAccordion();
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -1599,16 +1869,17 @@ async function initCalendar() {
       grid.appendChild(empty);
     }
 
+    const todayRef = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
       const dayCell = document.createElement('div');
-      dayCell.className = 'calendar-day';
+      const isToday = year === todayRef.getFullYear() && month === todayRef.getMonth() && day === todayRef.getDate();
+      dayCell.className = 'calendar-day' + (isToday ? ' today' : '');
       dayCell.innerHTML = `<div class="calendar-date">${day}</div>`;
 
       // Find events for this day
       const dayEvents = events.filter(e => {
         if (!e.fecha_evento) return false;
         const eDate = new Date(e.fecha_evento);
-        // Usar UTC date localmente si es necesario o simplificar comparando Y-M-D
         return eDate.getDate() === day && eDate.getMonth() === month && eDate.getFullYear() === year;
       });
 
@@ -1626,8 +1897,7 @@ async function initCalendar() {
   };
 
   await loadEvents();
-  
-  // Inject Mock Event for Visual Testing if empty
+
   if (events.length === 0) {
     events.push({
       titulo: 'Congreso Internacional IEEE',
@@ -1641,7 +1911,40 @@ async function initCalendar() {
     });
   }
 
+  const renderUpcoming = () => {
+    const listEl = document.getElementById('upcoming-events-list');
+    if (!listEl) return;
+    const now = new Date();
+    const upcoming = events
+      .filter(e => e.fecha_evento && new Date(e.fecha_evento) >= now)
+      .sort((a, b) => new Date(a.fecha_evento) - new Date(b.fecha_evento))
+      .slice(0, 5);
+    if (!upcoming.length) {
+      listEl.innerHTML = '<p class="upcoming-empty">No hay eventos próximos registrados.</p>';
+      return;
+    }
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    listEl.innerHTML = upcoming.map(e => {
+      const d = new Date(e.fecha_evento);
+      const link = e.slug ? contentDetailLink(e) : (e.link || '#');
+      const lugar = e.lugar ? `<p><i class="ph-fill ph-map-pin"></i> ${escapeHTML(e.lugar)}</p>` : '';
+      const cap = e.capitulo ? `<p><i class="ph-fill ph-tag"></i> ${escapeHTML(e.capitulo)}</p>` : '';
+      return `
+        <a href="${escapeAttribute(link)}" class="upcoming-event-card">
+          <div class="upcoming-event-date">
+            <span class="ev-day">${d.getDate()}</span>
+            <span class="ev-month">${monthNames[d.getMonth()]}</span>
+          </div>
+          <div class="upcoming-event-info">
+            <h4>${escapeHTML(e.titulo)}</h4>
+            ${lugar}${cap}
+          </div>
+        </a>`;
+    }).join('');
+  };
+
   renderCalendar();
+  renderUpcoming();
 
   btnPrev?.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -1669,13 +1972,10 @@ async function loadRevistas() {
     if (!res.ok) throw new Error('API not available');
     let revistas = await res.json();
     
-    // Inyección de Mock Data (Fallback Visual) si la API está vacía
+    // Sin revistas publicadas aún — mostrar estado vacío
     if (!revistas.length) {
-      revistas = [
-        { id: 1, titulo: "Revista IEEE #1 - IA Generativa", descripcion: "Edición enfocada en el impacto de la Inteligencia Artificial.", imagen_path: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date().toISOString(), link: "#" },
-        { id: 2, titulo: "Revista IEEE #2 - Robótica", descripcion: "Los avances de Boston Dynamics y robótica peruana.", imagen_path: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date(Date.now() - 86400000 * 30).toISOString(), link: "#" },
-        { id: 3, titulo: "Revista IEEE #3 - Ciberseguridad", descripcion: "Protegiendo las infraestructuras críticas del país.", imagen_path: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800&h=1200", publicado_at: new Date(Date.now() - 86400000 * 60).toISOString(), link: "#" }
-      ];
+      renderEmptyState(container, 'Próximamente: primera edición de la Revista IEEE UNMSM.', '<i class="ph-fill ph-newspaper"></i>');
+      return;
     }
     
     const render = (list) => {
@@ -1774,12 +2074,12 @@ async function loadCapituloDetalle() {
     updateOpenGraph({
       title:       cap.nombre || cap.sigla,
       description: cap.descripcion,
-      image:       cap.imagen_path ? `${UPLOADS_BASE_URL}${cap.imagen_path}` : null,
+      image:       resolveImageUrl(cap.imagen_portada_path),
       url:         window.location.href,
     });
 
     const logoHtml = cap.logo_path
-      ? `<img class="cap-detail-logo" src="${UPLOADS_BASE_URL}${cap.logo_path}" alt="Logo ${cap.sigla}" loading="lazy">`
+      ? `<img class="cap-detail-logo" src="${resolveImageUrl(cap.logo_path)}" alt="Logo ${cap.sigla}" loading="lazy">`
       : `<div class="cap-detail-logo-placeholder">${(cap.sigla||'?').slice(0,3)}</div>`;
 
     // Fetch contenido reciente del capítulo
@@ -1872,17 +2172,13 @@ async function loadContenidoDetalle() {
     return;
   }
 
-  const TYPE_LABELS = { noticia: 'Noticia', proyecto: 'Proyecto', evento: 'Evento' };
-  const TYPE_ICONS  = { noticia: 'newspaper', proyecto: 'rocket', evento: 'calendar' };
-  const backLinks   = { noticia: '/noticias', proyecto: '/proyectos', evento: '/concursos' };
-
   try {
-    const res  = await fetch(`${API_BASE_URL}/contenido/slug/${slug}`);
+    const res  = await fetch(`${API_BASE_URL}/contenido/${encodeURIComponent(slug)}`);
     if (!res.ok) throw new Error('Not found');
     const art  = await res.json();
     const tipo = art.tipo || 'noticia';
     const url  = window.location.href;
-    const imgSrc = art.imagen_path ? `${UPLOADS_BASE_URL}${art.imagen_path}` : null;
+    const imgSrc = resolveImageUrl(art.imagen_path);
 
     updateOpenGraph({
       title:       art.titulo,
@@ -1891,67 +2187,16 @@ async function loadContenidoDetalle() {
       url,
     });
 
-    const fecha = art.publicado_at
-      ? new Date(art.publicado_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' })
-      : '';
-
-    // Campos extra según tipo
-    let extraInfo = '';
-    if (tipo === 'evento') {
-      if (art.fecha_evento) extraInfo += `<div class="sidebar-info-item"><strong>Fecha</strong><span>${new Date(art.fecha_evento).toLocaleDateString('es-PE')}</span></div>`;
-      if (art.lugar)        extraInfo += `<div class="sidebar-info-item"><strong>Lugar</strong><span>${art.lugar}</span></div>`;
-      if (art.link)         extraInfo += `<div class="sidebar-info-item"><strong>Inscripción</strong><a href="${art.link}" target="_blank" rel="noopener" style="color:var(--ieee-blue)">Ver enlace</a></div>`;
+    // ── Bifurcación principal ──
+    if (tipo === 'noticia') {
+      root.innerHTML = await renderNoticiaInmersiva(art, imgSrc, url);
+      initNewsParallax();
+      initNewsReadingProgress();
+    } else {
+      root.innerHTML = renderArticuloAcademico(art, imgSrc, url, tipo);
+      initAcademicTOC();
+      initReadingProgress();
     }
-    if (tipo === 'proyecto' && art.estado_proyecto) {
-      extraInfo += `<div class="sidebar-info-item"><strong>Estado</strong><span>${art.estado_proyecto}</span></div>`;
-    }
-
-    root.innerHTML = `
-      <div class="article-hero" ${imgSrc ? `style="background:var(--ieee-dark);"` : ''}>
-        ${imgSrc ? `<div class="article-hero-bg" style="background-image:url('${imgSrc}');"></div>` : ''}
-        <div class="container">
-          <div class="breadcrumb">
-            <a href="/">Inicio</a><span>›</span>
-            <a href="${backLinks[tipo] || '/'}">${TYPE_LABELS[tipo] || tipo}s</a><span>›</span>
-            <span>${art.titulo}</span>
-          </div>
-          <div class="article-type-badge type-${tipo}">
-            <i data-lucide="${TYPE_ICONS[tipo] || 'file-text'}"></i>
-            ${TYPE_LABELS[tipo] || tipo}
-          </div>
-          <h1>${art.titulo}</h1>
-          <div class="article-meta-row">
-            ${art.autor_nombre ? `<span class="article-meta-item"><i data-lucide="user"></i> ${art.autor_nombre}</span>` : ''}
-            ${fecha             ? `<span class="article-meta-item"><i data-lucide="calendar"></i> ${fecha}</span>` : ''}
-            ${art.capitulo      ? `<span class="article-meta-item"><i data-lucide="layers"></i> ${art.capitulo}</span>` : ''}
-            ${art.vistas        ? `<span class="article-meta-item"><i data-lucide="eye"></i> ${art.vistas} vistas</span>` : ''}
-          </div>
-        </div>
-      </div>
-
-      <div class="container article-layout">
-        <article class="article-body">
-          ${imgSrc ? `<img class="article-featured-img" src="${imgSrc}" alt="${art.titulo}" loading="lazy">` : ''}
-          ${art.extracto ? `<p style="font-size:var(--text-lg);font-weight:500;color:var(--text-primary);border-left:4px solid var(--ieee-blue);padding-left:var(--space-4);margin-bottom:var(--space-6);">${art.extracto}</p>` : ''}
-          <div class="article-content">
-            ${art.cuerpo || art.descripcion || '<p>Sin contenido disponible.</p>'}
-          </div>
-          ${renderShareBar(art.titulo, url)}
-        </article>
-
-        <aside class="article-sidebar">
-          <div class="sidebar-card">
-            <h3>Detalles</h3>
-            <div class="sidebar-info-item"><strong>Tipo</strong><span>${TYPE_LABELS[tipo] || tipo}</span></div>
-            ${art.capitulo ? `<div class="sidebar-info-item"><strong>Capítulo</strong><span>${art.capitulo}</span></div>` : ''}
-            ${art.categoria ? `<div class="sidebar-info-item"><strong>Categoría</strong><span>${art.categoria}</span></div>` : ''}
-            ${extraInfo}
-          </div>
-          <a href="${backLinks[tipo] || '/'}" class="btn btn-secondary" style="width:100%;justify-content:center;">
-            <i data-lucide="arrow-left"></i> Volver
-          </a>
-        </aside>
-      </div>`;
 
     if (window.lucide) window.lucide.createIcons();
   } catch (err) {
@@ -1963,6 +2208,605 @@ async function loadContenidoDetalle() {
       </div>`;
   }
 }
+
+// ════════════════════════════════════════════════════════
+//  RENDER — ARTÍCULO ACADÉMICO
+// ════════════════════════════════════════════════════════
+function renderArticuloAcademico(art, imgSrc, url, tipo) {
+  const TYPE_LABELS = { noticia: 'Noticia', proyecto: 'Proyecto', evento: 'Evento', concurso: 'Concurso' };
+  const backLinks   = { noticia: '/noticias', proyecto: '/proyectos', evento: '/calendario', concurso: '/concursos' };
+
+  const fecha = art.publicado_at
+    ? new Date(art.publicado_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' })
+    : art.created_at ? new Date(art.created_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' }) : '';
+
+  // Calcular tiempo de lectura
+  const bodyText = (art.cuerpo || art.descripcion || '').replace(/<[^>]+>/g, '');
+  const wordCount = bodyText.split(/\s+/).filter(Boolean).length;
+  const readingMin = Math.max(1, Math.round(wordCount / 200));
+
+  // Autores
+  const autorInicial = (art.autor_nombre || art.autor_usuario || 'IEEE').charAt(0).toUpperCase();
+
+  // Abstract
+  const abstractHtml = art.abstract
+    ? `<div class="academic-abstract">
+         <span class="abstract-label"><i data-lucide="book-open" style="width:16px;height:16px;margin-right:6px;vertical-align:middle;"></i>Abstract</span>
+         ${escapeHTML(art.abstract)}
+       </div>`
+    : art.extracto
+    ? `<div class="academic-abstract">
+         <span class="abstract-label"><i data-lucide="book-open" style="width:16px;height:16px;margin-right:6px;vertical-align:middle;"></i>Resumen</span>
+         ${escapeHTML(art.extracto)}
+       </div>`
+    : '';
+
+  // DOI badge
+  const doiBadge = art.doi
+    ? `<span class="meta-item">
+         <i data-lucide="link-2" style="width:14px;height:14px;"></i>
+         <a href="${escapeAttribute(art.doi)}" class="doi-link" target="_blank" rel="noopener">${escapeHTML(art.doi)}</a>
+       </span>`
+    : '';
+
+  // Peer-reviewed
+  const peerBadge = art.peer_reviewed
+    ? `<div class="badge-peer-reviewed">
+         <i data-lucide="shield-check" style="width:12px;height:12px;"></i>
+         Revisado por pares
+       </div>`
+    : '';
+
+  // Archivos
+  const archivos = art.archivos || [];
+  const imagenes   = archivos.filter(f => f.tipo === 'imagen' || f.mime_type?.startsWith('image/'));
+  const documentos = archivos.filter(f => f.tipo === 'documento' || f.mime_type?.startsWith('application/'));
+
+  // Galería de imágenes
+  let galeriaHTML = '';
+  if (imagenes.length) {
+    galeriaHTML = `
+      <h2>Galería</h2>
+      <div class="article-gallery">
+        ${imagenes.map(f => `
+          <figure>
+            <img src="${resolveImageUrl(f.archivo_path)}" alt="${escapeAttribute(f.caption || 'Imagen adjunta')}"
+                 onclick="window.open(this.src,'_blank')" loading="lazy">
+            ${f.caption ? `<figcaption>${escapeHTML(f.caption)}</figcaption>` : ''}
+          </figure>
+        `).join('')}
+      </div>`;
+  }
+
+  // Documentos sidebar
+  let docsHTML = '';
+  if (documentos.length) {
+    docsHTML = `
+      <div class="sidebar-card">
+        <h3>Documentos</h3>
+        <div class="document-list">
+          ${documentos.map(f => `
+            <a href="${resolveImageUrl(f.archivo_path)}" class="document-item" target="_blank" rel="noopener">
+              <i data-lucide="file-text"></i>${escapeHTML(f.nombre_original || f.caption || 'Documento')}
+            </a>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Etiquetas
+  let tagsHTML = '';
+  if (art.etiquetas && art.etiquetas !== '[]' && art.etiquetas.trim()) {
+    const tags = art.etiquetas.startsWith('[') ? JSON.parse(art.etiquetas) : art.etiquetas.split(',');
+    tagsHTML = `
+      <div class="sidebar-card">
+        <h3>Etiquetas</h3>
+        <div class="article-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          ${tags.map(t => `<span class="tag-chip">${escapeHTML(t.trim())}</span>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Referencias
+  let refsHTML = '';
+  if (art.referencias && art.referencias !== '[]') {
+    try {
+      const refs = typeof art.referencias === 'string' ? JSON.parse(art.referencias) : art.referencias;
+      if (Array.isArray(refs) && refs.length) {
+        refsHTML = `
+          <div class="academic-references">
+            <h2>Referencias</h2>
+            <ol>
+              ${refs.map(r => `<li>${escapeHTML(r)}</li>`).join('')}
+            </ol>
+          </div>`;
+      }
+    } catch(e) { /* ignorar referencias malformadas */ }
+  }
+
+  // Botón enlace externo
+  let actionBtn = '';
+  if (art.link) {
+    actionBtn = `<a href="${escapeAttribute(art.link)}" class="btn-hero-action" target="_blank" rel="noopener">
+      <i data-lucide="external-link"></i>
+      ${tipo === 'evento' ? 'Ir a Inscripción' : tipo === 'concurso' ? 'Participar' : 'Ver enlace externo'}
+    </a>`;
+  }
+
+  // Cita en formato APA (básico)
+  const year = art.publicado_at ? new Date(art.publicado_at).getFullYear() : new Date().getFullYear();
+  const apaText = `${art.autor_nombre || 'Autor'} (${year}). ${art.titulo}. IEEE Rama Estudiantil UNMSM.`;
+  const bibtexText = `@article{ieee${year},\n  author = {${art.autor_nombre || 'Autor'}},\n  title  = {${art.titulo}},\n  year   = {${year}},\n  journal = {IEEE Rama Estudiantil UNMSM}\n}`;
+
+  // Progress bar element
+  const progressBar = `<div class="reading-progress-bar" id="readingProgress"></div>`;
+
+  return `
+    ${progressBar}
+    <div class="article-hero-academic">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="/">Inicio</a><span>›</span>
+          <a href="${backLinks[tipo] || '/'}">${TYPE_LABELS[tipo] || tipo}s</a><span>›</span>
+          <span>${escapeHTML(art.titulo)}</span>
+        </div>
+        ${peerBadge}
+        <h1 class="academic-article-title">${escapeHTML(art.titulo)}</h1>
+        <div class="academic-meta-bar">
+          ${art.autor_nombre ? `<span class="meta-item"><i data-lucide="user" style="width:14px;height:14px;"></i>${escapeHTML(art.autor_nombre)}</span>` : ''}
+          ${fecha ? `<span class="meta-divider">·</span><span class="meta-item"><i data-lucide="calendar" style="width:14px;height:14px;"></i>${fecha}</span>` : ''}
+          ${art.capitulo ? `<span class="meta-divider">·</span><span class="meta-item"><i data-lucide="layers" style="width:14px;height:14px;"></i>${escapeHTML(art.capitulo)}</span>` : ''}
+          <span class="meta-divider">·</span><span class="meta-item"><i data-lucide="clock" style="width:14px;height:14px;"></i>${readingMin} min de lectura</span>
+          ${art.vistas ? `<span class="meta-divider">·</span><span class="meta-item"><i data-lucide="eye" style="width:14px;height:14px;"></i>${art.vistas} vistas</span>` : ''}
+          ${doiBadge}
+        </div>
+        <div class="academic-action-bar">
+          ${documentos.length ? `<a href="${resolveImageUrl(documentos[0].archivo_path)}" class="academic-action-btn primary" target="_blank" rel="noopener"><i data-lucide="download" style="width:14px;height:14px;"></i>Descargar PDF</a>` : ''}
+          <button class="academic-action-btn secondary" onclick="document.getElementById('citeBox').classList.toggle('show')"><i data-lucide="quote" style="width:14px;height:14px;"></i>Citar</button>
+          <button class="academic-action-btn secondary" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('Enlace copiado','success'))"><i data-lucide="share-2" style="width:14px;height:14px;"></i>Compartir</button>
+        </div>
+
+        <div id="citeBox" class="citation-glass-box">
+          <div class="citation-header">
+            <strong><i data-lucide="bookmark"></i> Formatos de Citación</strong>
+            <button onclick="document.getElementById('citeBox').classList.remove('show')" class="close-cite" title="Cerrar">✕</button>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Formato APA</div>
+            <div class="citation-code" onclick="navigator.clipboard.writeText(this.innerText).then(()=>showToast('Cita APA copiada','success'))" title="Click para copiar">${escapeHTML(apaText)}</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">BibTeX</div>
+            <pre class="citation-code bibtex" onclick="navigator.clipboard.writeText(this.innerText).then(()=>showToast('BibTeX copiado','success'))" title="Click para copiar">${escapeHTML(bibtexText)}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="academic-layout">
+
+        <!-- TOC Sidebar izquierdo -->
+        <nav class="academic-toc" id="articleTOC" aria-label="Tabla de contenidos">
+          <div class="toc-header"><i data-lucide="list" style="width:13px;height:13px;"></i>Contenido</div>
+          <ul class="toc-list" id="tocList">
+            <!-- generado por JS initAcademicTOC() -->
+          </ul>
+        </nav>
+
+        <!-- Cuerpo del artículo -->
+        <article class="academic-body" id="articleBody">
+          ${abstractHtml}
+          ${imgSrc ? `<figure style="margin-bottom:var(--space-7)"><img src="${imgSrc}" alt="${escapeAttribute(art.titulo)}" style="width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);" loading="lazy"></figure>` : ''}
+          <div class="academic-content" id="academicContent">
+            ${art.cuerpo || art.descripcion || '<p>Sin contenido disponible.</p>'}
+            ${galeriaHTML}
+          </div>
+          ${refsHTML}
+          ${renderShareBar(art.titulo, url)}
+        </article>
+
+        <!-- Sidebar derecho -->
+        <aside class="academic-sidebar">
+          <!-- Card autor -->
+          <div class="author-card">
+            <div class="author-card-header">
+              <div class="author-avatar">${autorInicial}</div>
+              <div>
+                <div class="author-info-name">${escapeHTML(art.autor_nombre || art.autor_usuario || 'IEEE UNMSM')}</div>
+                <div class="author-info-role">${art.capitulo ? escapeHTML(art.capitulo) : 'IEEE Rama Estudiantil'}</div>
+              </div>
+            </div>
+            <h3>Publicado</h3>
+            <p style="font-size:0.82rem;color:var(--text-muted)">${fecha || 'Fecha no disponible'}</p>
+          </div>
+
+          ${docsHTML}
+          ${tagsHTML}
+          ${actionBtn}
+          <a href="${backLinks[tipo] || '/'}" class="btn btn-secondary" style="width:100%;justify-content:center;margin-top:0.5rem;">
+            <i data-lucide="arrow-left"></i> Volver
+          </a>
+        </aside>
+
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER — NOTICIA INMERSIVA
+// ════════════════════════════════════════════════════════
+async function renderNoticiaInmersiva(art, imgSrc, url) {
+  const fecha = art.publicado_at
+    ? new Date(art.publicado_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' })
+    : art.created_at ? new Date(art.created_at).toLocaleDateString('es-PE', { day:'numeric', month:'long', year:'numeric' }) : '';
+
+  const bodyText = (art.cuerpo || art.descripcion || '').replace(/<[^>]+>/g, '');
+  const wordCount = bodyText.split(/\s+/).filter(Boolean).length;
+  const readingMin = Math.max(1, Math.round(wordCount / 200));
+
+  const autorInicial = (art.autor_nombre || art.autor_usuario || 'I').charAt(0).toUpperCase();
+
+  // Breaking badge
+  const breakingBadge = art.es_destacada
+    ? `<div class="badge-breaking">
+         <span class="breaking-dot"></span>
+         ${escapeHTML(art.breaking_label || 'ÚLTIMA HORA')}
+       </div>`
+    : '';
+
+  // Archivos
+  const archivos  = art.archivos || [];
+  const imagenes  = archivos.filter(f => f.tipo === 'imagen' || f.mime_type?.startsWith('image/'));
+  const documentos = archivos.filter(f => f.tipo === 'documento' || f.mime_type?.startsWith('application/'));
+
+  // Galería de noticias
+  let galeriaHTML = '';
+  if (imagenes.length) {
+    const cls = imagenes.length === 1 ? 'single' : imagenes.length === 3 ? 'triple' : '';
+    galeriaHTML = `
+      <div class="news-gallery ${cls}">
+        ${imagenes.map(f => `
+          <div class="news-gallery-item" onclick="window.open('${resolveImageUrl(f.archivo_path)}','_blank')">
+            <img src="${resolveImageUrl(f.archivo_path)}" alt="${escapeAttribute(f.caption || 'Imagen')}" loading="lazy">
+            ${f.caption ? `<div class="news-gallery-caption">${escapeHTML(f.caption)}</div>` : ''}
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // Documentos
+  let docsHTML = '';
+  if (documentos.length) {
+    docsHTML = `
+      <div class="sidebar-card" style="margin-top:var(--space-4)">
+        <h3 style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--news-accent);margin-bottom:var(--space-3);padding-bottom:var(--space-2);border-bottom:2px solid rgba(0,212,255,0.2)">Documentos</h3>
+        <div class="document-list">
+          ${documentos.map(f => `
+            <a href="${resolveImageUrl(f.archivo_path)}" class="document-item" target="_blank" rel="noopener">
+              <i data-lucide="file-text"></i>${escapeHTML(f.nombre_original || f.caption || 'Documento')}
+            </a>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Etiquetas
+  let tags = [];
+  if (art.etiquetas && art.etiquetas !== '[]' && art.etiquetas.trim()) {
+    try { tags = art.etiquetas.startsWith('[') ? JSON.parse(art.etiquetas) : art.etiquetas.split(','); }
+    catch(e) { tags = []; }
+  }
+
+  // Noticias relacionadas
+  let relacionadasHTML = '';
+  try {
+    const relRes = await fetch(`${API_BASE_URL}/contenido?tipo=noticia&estado=aprobado`);
+    if (relRes.ok) {
+      const allNoticias = await relRes.json();
+      const relacionadas = allNoticias
+        .filter(n => n.slug !== art.slug)
+        .slice(0, 4);
+      if (relacionadas.length) {
+        relacionadasHTML = relacionadas.map(n => {
+          const thumb = resolveImageUrl(n.imagen_path);
+          const nFecha = n.publicado_at ? new Date(n.publicado_at).toLocaleDateString('es-PE', { day:'numeric', month:'short' }) : '';
+          return `
+            <a href="/contenido-detalle?slug=${encodeURIComponent(n.slug)}" class="related-item">
+              ${thumb
+                ? `<img src="${thumb}" alt="${escapeAttribute(n.titulo)}" class="related-thumb" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                : ''}
+              <div class="related-thumb-placeholder" ${thumb ? 'style="display:none"' : ''}>📰</div>
+              <div class="related-info">
+                <div class="related-title">${escapeHTML(n.titulo)}</div>
+                <div class="related-date">${nFecha}</div>
+              </div>
+            </a>`;
+        }).join('');
+      }
+    }
+  } catch(e) { /* relacionadas opcionales */ }
+
+  // Feed más noticias
+  let moreFeedHTML = '';
+  try {
+    const moreRes = await fetch(`${API_BASE_URL}/contenido?tipo=noticia&estado=aprobado`);
+    if (moreRes.ok) {
+      const moreNoticias = (await moreRes.json()).filter(n => n.slug !== art.slug).slice(0, 8);
+      if (moreNoticias.length) {
+        moreFeedHTML = `
+          <div class="news-more-feed container">
+            <h2>Más Noticias</h2>
+            <div class="news-more-scroll">
+              ${moreNoticias.map(n => {
+                const thumb = resolveImageUrl(n.imagen_path);
+                const cat = escapeHTML(n.categoria || 'Noticia');
+                return `
+                  <a href="/contenido-detalle?slug=${encodeURIComponent(n.slug)}" class="news-more-item">
+                    ${thumb
+                      ? `<img src="${thumb}" alt="${escapeAttribute(n.titulo)}" class="news-more-img" loading="lazy" onerror="this.parentElement.innerHTML='<div class=news-more-img-placeholder>📰</div>'+this.parentElement.innerHTML.replace(this.outerHTML,'')">`
+                      : `<div class="news-more-img-placeholder">📰</div>`}
+                    <div class="news-more-body">
+                      <div class="news-more-cat">${cat}</div>
+                      <div class="news-more-title">${escapeHTML(n.titulo)}</div>
+                    </div>
+                  </a>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }
+    }
+  } catch(e) { /* feed opcional */ }
+
+  return `
+    <div class="reading-progress-bar" id="readingProgress"></div>
+
+    <!-- HERO INMERSIVO -->
+    <div class="news-hero" id="newsHero">
+      ${imgSrc ? `<div class="news-hero-bg" id="newsHeroBg" style="background-image:url('${imgSrc}')"></div>` : ''}
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="/">Inicio</a><span>›</span>
+          <a href="/noticias">Noticias</a><span>›</span>
+          <span>${escapeHTML(art.titulo.substring(0, 40))}…</span>
+        </div>
+        ${breakingBadge}
+        <h1 class="news-hero-title">${escapeHTML(art.titulo)}</h1>
+        <div class="news-meta-strip">
+          <div class="news-meta-author">
+            <div class="news-author-avatar">${autorInicial}</div>
+            <div>
+              <div class="news-author-name">${escapeHTML(art.autor_nombre || art.autor_usuario || 'IEEE UNMSM')}</div>
+              <div class="news-author-date">${fecha}</div>
+            </div>
+          </div>
+          ${art.categoria ? `<span class="news-cat-pill">${escapeHTML(art.categoria)}</span>` : ''}
+          <span class="news-reading-time">
+            <i data-lucide="clock" style="width:13px;height:13px;"></i>
+            ${readingMin} min
+          </span>
+          <div class="news-meta-share">
+            <a class="news-share-btn" href="https://wa.me/?text=${encodeURIComponent(art.titulo + ' ' + url)}" target="_blank" rel="noopener" title="WhatsApp">
+              <i data-lucide="message-circle" style="width:15px;height:15px;"></i>
+            </a>
+            <a class="news-share-btn" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(art.titulo)}&url=${encodeURIComponent(url)}" target="_blank" rel="noopener" title="Twitter/X">
+              <i data-lucide="twitter" style="width:15px;height:15px;"></i>
+            </a>
+            <button class="news-share-btn" title="Copiar enlace" onclick="navigator.clipboard.writeText('${url}').then(()=>showToast('Enlace copiado','success'))">
+              <i data-lucide="link" style="width:15px;height:15px;"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY + SIDEBAR -->
+    <div class="container">
+      <div class="news-layout">
+
+        <div class="news-body" id="newsBody">
+          ${(art.lead_paragraph || art.extracto)
+            ? (() => {
+                const lp = art.lead_paragraph || art.extracto;
+                if (!lp) return '';
+                const firstChar = lp.charAt(0);
+                const rest = lp.slice(1);
+                return `<p class="news-lead"><span class="drop-cap">${escapeHTML(firstChar)}</span>${escapeHTML(rest)}</p>`;
+              })()
+            : ''}
+          <div class="news-content">
+            ${art.cuerpo || art.descripcion || '<p>Sin contenido disponible.</p>'}
+            ${galeriaHTML}
+          </div>
+          ${tags.length ? `
+            <div class="news-tags">
+              ${tags.map(t => `<a href="/noticias" class="news-tag">${escapeHTML(t.trim())}</a>`).join('')}
+            </div>` : ''}
+          ${renderShareBar(art.titulo, url)}
+        </div>
+
+        <aside class="news-sidebar">
+          ${relacionadasHTML ? `
+            <div class="related-news-card">
+              <h3><i data-lucide="rss" style="width:12px;height:12px;"></i>Noticias Relacionadas</h3>
+              ${relacionadasHTML}
+            </div>` : ''}
+          ${docsHTML}
+          ${art.link ? `
+            <a href="${escapeAttribute(art.link)}" class="btn-hero-action" target="_blank" rel="noopener">
+              <i data-lucide="external-link"></i> Ver enlace externo
+            </a>` : ''}
+          <a href="/noticias" class="btn btn-secondary" style="width:100%;justify-content:center;">
+            <i data-lucide="arrow-left"></i> Todas las noticias
+          </a>
+        </aside>
+
+      </div>
+    </div>
+
+    ${moreFeedHTML}`;
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS — TOC con scroll-spy para artículo académico
+// ════════════════════════════════════════════════════════
+function initAcademicTOC() {
+  const content = document.getElementById('academicContent');
+  const tocList = document.getElementById('tocList');
+  if (!content || !tocList) return;
+
+  const headings = content.querySelectorAll('h2, h3');
+  if (!headings.length) {
+    document.getElementById('articleTOC')?.remove();
+    return;
+  }
+
+  const items = [];
+  headings.forEach((h, i) => {
+    const id = `section-${i}`;
+    h.id = id;
+    const li = document.createElement('li');
+    li.className = 'toc-item';
+    li.innerHTML = `<a href="#${id}" class="toc-link ${h.tagName === 'H3' ? 'toc-h3' : ''}" data-target="${id}">${h.textContent}</a>`;
+    tocList.appendChild(li);
+    items.push({ id, link: li.querySelector('a') });
+  });
+
+  // Scroll-spy con IntersectionObserver
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        items.forEach(item => item.link.classList.remove('active'));
+        const found = items.find(item => item.id === entry.target.id);
+        if (found) found.link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+  headings.forEach(h => observer.observe(h));
+
+  // Click suave
+  tocList.addEventListener('click', e => {
+    const a = e.target.closest('.toc-link');
+    if (!a) return;
+    e.preventDefault();
+    const target = document.getElementById(a.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+// Barra de progreso de lectura — artículo académico
+function initReadingProgress() {
+  const bar = document.getElementById('readingProgress');
+  const body = document.getElementById('articleBody');
+  if (!bar || !body) return;
+
+  const update = () => {
+    const { top, height } = body.getBoundingClientRect();
+    const progress = Math.min(100, Math.max(0, (-top / (height - window.innerHeight)) * 100));
+    bar.style.width = progress + '%';
+  };
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+// Barra de progreso de lectura — noticia
+function initNewsReadingProgress() {
+  const bar = document.getElementById('readingProgress');
+  const body = document.getElementById('newsBody');
+  if (!bar || !body) return;
+
+  const update = () => {
+    const { top, height } = body.getBoundingClientRect();
+    const progress = Math.min(100, Math.max(0, (-top / (height - window.innerHeight)) * 100));
+    bar.style.width = progress + '%';
+  };
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+// Parallax suave del hero de noticias
+function initNewsParallax() {
+  const bg = document.getElementById('newsHeroBg');
+  if (!bg) return;
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  const update = () => {
+    const scrollY = window.scrollY;
+    const heroHeight = document.getElementById('newsHero')?.offsetHeight || 0;
+    if (scrollY <= heroHeight) {
+      const shift = scrollY * 0.25;
+      bg.style.transform = `scale(1.04) translateY(${shift}px)`;
+    }
+  };
+  window.addEventListener('scroll', update, { passive: true });
+}
+
+
+async function loadFooterSettings() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/site-settings`);
+    if (!res.ok) return;
+    const settings = await res.json();
+    
+    const setLink = (selector, url) => {
+      if (!url) return;
+      let finalUrl = url;
+      if (!/^https?:\/\//i.test(url) && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
+        finalUrl = 'https://' + url;
+      }
+      const els = document.querySelectorAll(selector);
+      els.forEach(el => el.href = finalUrl);
+    };
+
+    setLink('a[aria-label="Facebook"]', settings.footer_facebook);
+    setLink('a[aria-label="Instagram"]', settings.footer_instagram);
+    setLink('a[aria-label="LinkedIn"]', settings.footer_linkedin);
+    setLink('a[aria-label="WhatsApp"]', settings.footer_whatsapp);
+    setLink('a[aria-label="Twitter"]', settings.footer_twitter); // Opcional
+
+    // Contacto (Email y Dirección)
+    const emailLinks = document.querySelectorAll('.footer-contact-item a[href^="mailto:"]');
+    emailLinks.forEach(emailLink => {
+      if (settings.footer_email) {
+        emailLink.href = `mailto:${settings.footer_email}`;
+        emailLink.textContent = settings.footer_email;
+      }
+    });
+
+    const icons = document.querySelectorAll('.footer-contact-item span.icon');
+    icons.forEach(icon => {
+      if (icon.textContent.includes('📍') && settings.footer_address) {
+        const p = icon.nextElementSibling;
+        if (p) p.innerHTML = settings.footer_address.replace(/\n/g, '<br>');
+      }
+    });
+
+    // Cargar capítulos dinámicos en el footer
+    try {
+      const capRes = await fetch(`${API_BASE_URL}/capitulos`);
+      if (capRes.ok) {
+        const capitulos = await capRes.json();
+        const footerCapitulos = document.querySelectorAll('.footer-col-title');
+        footerCapitulos.forEach(title => {
+          if (title.textContent.trim() === 'Capítulos') {
+            const ul = title.nextElementSibling;
+            if (ul && ul.classList.contains('footer-links')) {
+              // Limitar a los primeros 6 para no saturar el footer
+              ul.innerHTML = capitulos.slice(0, 6).map(cap => 
+                `<li><a href="capitulo-detalle.html?slug=${cap.slug}">IEEE ${cap.siglas || cap.slug.toUpperCase()}</a></li>`
+              ).join('');
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Error loading footer chapters:', e);
+    }
+  } catch (err) {
+    console.warn('Error loading footer settings:', err);
+  }
+}
+
+  loadFooterSettings();
 
   if (page === 'home') {
     initAdvancedCanvas();
@@ -1978,9 +2822,7 @@ async function loadContenidoDetalle() {
   } else if (page === 'noticias') {
     loadNoticias();
   } else if (page === 'proyectos') {
-    loadProyectos().then(() => {
-      initHorizontalScroll();
-    });
+    loadProyectos();
   } else if (page === 'concursos') {
     loadConcursos();
   } else if (page === 'contenido-detalle') {
@@ -2003,3 +2845,55 @@ async function loadContenidoDetalle() {
     window.lucide.createIcons();
   }
 });
+// -- Scroll Reveal Logic --
+function initScrollReveal() {
+  const revealElements = document.querySelectorAll('.reveal');
+  if (!revealElements.length) return;
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+
+  revealElements.forEach(el => observer.observe(el));
+}
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initScrollReveal, 500); // Dar tiempo a que los elementos din�micos se carguen (Noticias, etc.)
+});
+// -- Interactive 3D Hero Effect --
+function initHero3D() {
+  const heroSection = document.getElementById('inicio');
+  const heroImgWrapper = document.getElementById('hero-img-wrapper');
+  if (!heroSection || !heroImgWrapper) return;
+
+  heroSection.addEventListener('mousemove', (e) => {
+    const { left, top, width, height } = heroImgWrapper.getBoundingClientRect();
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    
+    // Calcular el porcentaje de distancia del rat�n al centro del contenedor
+    const mouseX = e.clientX - centerX;
+    const mouseY = e.clientY - centerY;
+    
+    // Invertir valores para efecto "parallax" natural
+    let rotateX = (mouseY / height) * -15; rotateX = Math.max(-10, Math.min(10, rotateX));
+    let rotateY = (mouseX / width) * 15; rotateY = Math.max(-10, Math.min(10, rotateY));
+    
+    heroImgWrapper.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+    heroImgWrapper.style.transition = 'transform 0.1s ease-out';
+  });
+
+  heroSection.addEventListener('mouseleave', () => {
+    heroImgWrapper.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+    heroImgWrapper.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+  });
+}
+document.addEventListener('DOMContentLoaded', initHero3D);
+// ── Layout Adaptativo de Tarjetas basado en Imágenes ──
+window.handleCardImageLoad = function(img) {
+  // Desactivado a peticin del usuario: el diseo vertical/horizontal dinmico
+  // haca que las tarjetas se vieran apretadas en cuadrculas.
+};

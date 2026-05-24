@@ -39,11 +39,11 @@ function initializeDatabase() {
       )
     `);
 
-    // Tabla contenido (noticias, proyectos, eventos)
+    // Tabla contenido (noticias, proyectos, eventos, concursos)
     db.run(`
       CREATE TABLE IF NOT EXISTS contenido (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo TEXT NOT NULL CHECK(tipo IN ('noticia', 'proyecto', 'evento')),
+        tipo TEXT NOT NULL CHECK(tipo IN ('noticia', 'proyecto', 'evento', 'concurso')),
         titulo TEXT NOT NULL,
         descripcion TEXT NOT NULL,
         autor_id INTEGER NOT NULL,
@@ -67,6 +67,21 @@ function initializeDatabase() {
     addColumnSafe('contenido', 'vistas', 'INTEGER DEFAULT 0');
     addColumnSafe('contenido', 'publicado_at', 'DATETIME');
     db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_contenido_slug ON contenido(slug) WHERE slug IS NOT NULL');
+
+    // ── Campos para noticias inmersivas (v2) ──
+    addColumnSafe('contenido', 'es_destacada',   "INTEGER DEFAULT 0");
+    addColumnSafe('contenido', 'breaking_label', "TEXT");
+    addColumnSafe('contenido', 'lead_paragraph', "TEXT");
+    addColumnSafe('contenido', 'tiempo_lectura', "INTEGER DEFAULT 0");
+
+    // ── Campos para artículos académicos (v2) ──
+    addColumnSafe('contenido', 'abstract',        "TEXT");
+    addColumnSafe('contenido', 'doi',             "TEXT");
+    addColumnSafe('contenido', 'peer_reviewed',   "INTEGER DEFAULT 0");
+    addColumnSafe('contenido', 'referencias',     "TEXT DEFAULT '[]'");
+    addColumnSafe('contenido', 'publicacion_vol', "TEXT");
+    addColumnSafe('contenido', 'etiquetas',       "TEXT DEFAULT '[]'");
+
 
     // Tabla archivos (PDF, documentos, etc.)
     db.run(`
@@ -114,6 +129,16 @@ function initializeDatabase() {
         clave TEXT UNIQUE NOT NULL,
         path TEXT,
         alt_text TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de configuración global (redes, email, mantenimiento)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clave TEXT UNIQUE NOT NULL,
+        valor TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -192,6 +217,70 @@ function initializeDatabase() {
         console.log('Default site_images seeded');
       }
     });
+
+    // Seed default admin user if empty (uses crypto.scrypt — no native modules)
+    db.get('SELECT COUNT(*) as count FROM usuarios', (err, row) => {
+      if (!err && row && row.count === 0) {
+        const crypto = require('crypto');
+        const salt = crypto.randomBytes(16).toString('hex');
+        crypto.scrypt('admin123', salt, 64, { N: 16384, r: 8, p: 1 }, (scryptErr, key) => {
+          if (scryptErr) { console.error('scrypt error:', scryptErr); return; }
+          const hash = '$scrypt$16384$8$1$' + salt + '$' + key.toString('hex');
+          db.run(
+            'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
+            ['Admin', 'admin@ieee-unmsm.org', hash, 'director_rama'],
+            (insertErr) => {
+              if (!insertErr) console.log('Default admin user seeded (admin@ieee-unmsm.org / admin123)');
+            }
+          );
+        });
+      }
+    });
+
+    // Seed default site settings if empty
+    db.get('SELECT COUNT(*) as count FROM site_settings', (err, row) => {
+      if (!err && row && row.count === 0) {
+        const defaults = [
+          ['footer_facebook', 'https://facebook.com/ieee.unmsm'],
+          ['footer_instagram', 'https://instagram.com/ieee_unmsm'],
+          ['footer_linkedin', 'https://linkedin.com/company/ieee-unmsm'],
+          ['footer_whatsapp', 'https://wa.me/51999999999'],
+          ['footer_email', 'ieee@unmsm.edu.pe'],
+          ['footer_address', 'Universidad Nacional Mayor de San Marcos\\nLima, Perú']
+        ];
+        const stmt = db.prepare('INSERT INTO site_settings (clave, valor) VALUES (?, ?)');
+        defaults.forEach(d => stmt.run(d));
+        stmt.finalize();
+        console.log('Default site_settings seeded');
+      }
+    });
+
+    // Seed default capitulos if empty
+    db.get('SELECT COUNT(*) as count FROM capitulo_detalle', (err, row) => {
+      if (!err && row && row.count === 0) {
+        try {
+          const path = require('path');
+          const fs = require('fs');
+          const dataPath = path.join(__dirname, '../../data/capitulos.json');
+          if (fs.existsSync(dataPath)) {
+            const capitulos = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+            const stmt = db.prepare('INSERT INTO capitulo_detalle (slug, nombre, siglas, descripcion_corta, color) VALUES (?, ?, ?, ?, ?)');
+            capitulos.forEach(c => {
+              stmt.run(c.id, c.nombre, c.siglas, c.descripcion, c.color);
+            });
+            stmt.finalize();
+            console.log('Default capitulos seeded from capitulos.json');
+          }
+        } catch (e) {
+          console.error('Error seeding capitulos from json:', e);
+        }
+      }
+    });
+
+    // Actualizaciones de esquema en caliente
+    addColumnSafe('contenido', 'etiquetas', "TEXT DEFAULT '[]'");
+    addColumnSafe('revistas', 'etiquetas', "TEXT DEFAULT '[]'");
+    addColumnSafe('galeria_fotos', 'etiquetas', "TEXT DEFAULT '[]'");
   });
 }
 

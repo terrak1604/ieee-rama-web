@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const { authMiddleware, optionalAuthMiddleware, roleMiddleware } = require('../middleware/auth');
 const {
   getContenido,
   getContenidoBySlug,
+  getContenidoAdminById,
   getPendientes,
   getMisContenido,
   createContenido,
@@ -13,31 +12,17 @@ const {
   rechazarContenido,
   updateContenido,
   deleteContenido,
+  generarOpenGraph,
 } = require('../controllers/contenidoController');
 const {
   uploadContenidoArchivos,
   deleteContenidoArchivo,
 } = require('../controllers/archivoController');
-const { contentUpload, validateContentFiles } = require('../middleware/upload');
+const { uploadFor, contentUpload, validateContentFiles } = require('../middleware/upload');
 
-// Multer config para uploads
-const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: (req, file, cb) => {
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '-');
-    cb(null, Date.now() + '-' + safeName);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed'));
-    }
-    cb(null, true);
-  },
+const upload = uploadFor('', {
+  maxFileSize: 5 * 1024 * 1024,
+  imagesOnly: true,
 });
 
 // GET todas las noticias/proyectos/eventos (público)
@@ -49,6 +34,12 @@ router.get('/mis-contenidos/:autorId', authMiddleware, getMisContenido);
 // GET pendientes de aprobación (solo director de rama)
 router.get('/pendientes', authMiddleware, roleMiddleware(['director_rama']), getPendientes);
 
+// GET detalle administrativo por id (antes de /:slug)
+router.get('/admin/:id', authMiddleware, getContenidoAdminById);
+
+// GET Open Graph proxy para redes sociales
+router.get('/share/:slug', generarOpenGraph);
+
 // GET detalle publico por slug
 router.get('/:slug', getContenidoBySlug);
 
@@ -56,7 +47,7 @@ router.get('/:slug', getContenidoBySlug);
 router.post('/', authMiddleware, upload.single('imagen'), createContenido);
 
 // UPDATE contenido (solo autor)
-router.patch('/:id', authMiddleware, updateContenido);
+router.patch('/:id', authMiddleware, upload.single('imagen'), updateContenido);
 
 // Upload adjuntos editoriales
 router.post('/:id/archivos', authMiddleware, contentUpload, validateContentFiles, uploadContenidoArchivos);

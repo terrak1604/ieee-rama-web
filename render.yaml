@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ieee-rama-web
+    env: node
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render proporciona automáticamente el puerto

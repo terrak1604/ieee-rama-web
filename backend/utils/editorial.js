@@ -6,8 +6,15 @@ const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
 
 function sanitizeHtml(value) {
-  return DOMPurify.sanitize(value || '', {
+  const withoutExecutableBlocks = String(value || '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+
+  return DOMPurify.sanitize(withoutExecutableBlocks, {
     USE_PROFILES: { html: true },
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
     ADD_ATTR: ['target', 'rel'],
   });
 }

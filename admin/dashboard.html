@@ -21,6 +21,7 @@
       </div>
       <div class="navbar-menu">
         <span id="userName"></span>
+        <button id="adminThemeToggle" class="theme-toggle" type="button" title="Cambiar tema" aria-label="Cambiar tema"></button>
         <button id="logoutBtn" class="btn-outline">Salir</button>
       </div>
     </div>
@@ -31,32 +32,33 @@
     <aside class="sidebar">
       <div class="sidebar-menu">
         <h3>Menú</h3>
-        <button class="menu-item active" data-tab="inicio">📊 Inicio</button>
+        <button class="menu-item active" data-tab="inicio">Inicio</button>
 
         <!-- Para directores de capítulo -->
         <div id="directorMenu">
-          <button class="menu-item" data-tab="editar-capitulo">🏛️ Mi Capítulo</button>
-          <button class="menu-item" data-tab="editor-articulo">✍️ Editor</button>
-          <button class="menu-item" data-tab="crear-noticia">📝 Nueva Noticia</button>
-          <button class="menu-item" data-tab="crear-proyecto">🚀 Nuevo Proyecto</button>
-          <button class="menu-item" data-tab="crear-evento">📅 Nuevo Evento</button>
-          <button class="menu-item" data-tab="mis-contenidos">📋 Mi Contenido</button>
+          <button class="menu-item" data-tab="editar-capitulo">Mi Capítulo</button>
+          <button class="menu-item" data-tab="editor-articulo">Editor</button>
+          <button class="menu-item" data-tab="crear-noticia">Nueva Noticia</button>
+          <button class="menu-item" data-tab="crear-proyecto">Nuevo Proyecto</button>
+          <button class="menu-item" data-tab="crear-evento">Nuevo Evento</button>
+          <button class="menu-item" data-tab="mis-contenidos">Mi Contenido</button>
         </div>
 
         <!-- Para directores de rama -->
         <div id="ramaMenu" class="hidden">
-          <button class="menu-item" data-tab="editar-capitulo">🏛️ Capítulos</button>
-          <button class="menu-item" data-tab="editor-articulo">✍️ Editor</button>
-          <button class="menu-item" data-tab="crear-noticia">📝 Nuevo Anuncio</button>
-          <button class="menu-item" data-tab="pendientes">⏳ Pendientes Aprobación</button>
-          <button class="menu-item" data-tab="contenido-publicado">✅ Contenido Publicado</button>
-          <button class="menu-item" data-tab="cuentas">👤 Cuentas y Accesos</button>
-          <button class="menu-item" data-tab="site-images">🖼️ Imágenes del Sitio</button>
+          <button class="menu-item" data-tab="editar-capitulo">Capítulos</button>
+          <button class="menu-item" data-tab="editor-articulo">Editor</button>
+          <button class="menu-item" data-tab="crear-noticia">Nuevo Anuncio</button>
+          <button class="menu-item" data-tab="pendientes">Pendientes Aprobación</button>
+          <button class="menu-item" data-tab="contenido-publicado">Contenido Publicado</button>
+          <button class="menu-item" data-tab="cuentas">Cuentas y Accesos</button>
+          <button class="menu-item" data-tab="site-config">Configuración Global</button>
         </div>
 
         <hr class="sidebar-divider">
-        <button class="menu-item" data-tab="crear-revista">📰 Nueva Revista</button>
-        <button class="menu-item" data-tab="subir-galeria">🖼️ Subir Galería</button>
+        <button class="menu-item" data-tab="crear-revista">Revista</button>
+        <button class="menu-item" data-tab="subir-galeria">Subir Galería</button>
+        <button class="menu-item" data-tab="faq">FAQ</button>
       </div>
     </aside>
 
@@ -64,16 +66,32 @@
     <main class="admin-main">
       <!-- TAB: Inicio -->
       <section id="inicio" class="tab-content active">
-        <h1>Bienvenido al Panel de Administración</h1>
-        <div class="welcome-cards">
-          <div class="card">
-            <h3 id="cardTitleDirector">Sube tu contenido</h3>
-            <p id="cardDescDirector">Crea noticias, proyectos y eventos para tu capítulo. Después se enviará a aprobación.</p>
+        <h1>Panel de Administración</h1>
+
+        <!-- Stats cards -->
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-dash-card">
+            <span class="stat-dash-num" id="statAprobados">—</span>
+            <span class="stat-dash-label">Publicaciones</span>
           </div>
-          <div class="card">
-            <h3 id="cardTitleRama">Aprueba contenido</h3>
-            <p id="cardDescRama">Revisa y aprueba el contenido enviado por los directores de capítulos.</p>
+          <div class="stat-dash-card">
+            <span class="stat-dash-num" id="statPendientes">—</span>
+            <span class="stat-dash-label">Pendientes</span>
           </div>
+          <div class="stat-dash-card">
+            <span class="stat-dash-num" id="statCapitulos">—</span>
+            <span class="stat-dash-label">Capítulos</span>
+          </div>
+          <div class="stat-dash-card">
+            <span class="stat-dash-num" id="statProximoEvento">—</span>
+            <span class="stat-dash-label">Próximo evento</span>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-wrap">
+          <h3>Publicaciones por mes (últimos 6 meses)</h3>
+          <canvas id="statsChart" height="90"></canvas>
         </div>
       </section>
 
@@ -94,6 +112,7 @@
                   <option value="noticia">Noticia</option>
                   <option value="proyecto">Proyecto</option>
                   <option value="evento">Evento</option>
+                  <option value="concurso">Concurso</option>
                 </select>
               </div>
               <div class="form-group">
@@ -119,8 +138,82 @@
                 </div>
               </div>
               <div class="form-group">
+                <label for="editorLink">Enlace Externo / Inscripción</label>
+                <input type="url" id="editorLink" placeholder="https://...">
+              </div>
+              <div class="form-group">
                 <label for="editorImagen">Imagen destacada</label>
                 <input type="file" id="editorImagen" accept="image/*">
+              </div>
+              <div class="form-group">
+                <label for="editorEtiquetas">Etiquetas (separadas por comas)</label>
+                <input type="text" id="editorEtiquetas" placeholder="Ej: WIE, Conferencia, React">
+              </div>
+
+              <!-- ═══ SECCIÓN ACADÉMICA (colapsable) ═══ -->
+              <div class="editor-section-collapse" id="sectionAcademico">
+                <button type="button" class="collapse-toggle" onclick="toggleCollapse('academicFields')">
+                  <span>⚗ Configuración Académica</span>
+                  <span class="collapse-arrow" id="academicArrow">▸</span>
+                </button>
+                <div class="collapse-body" id="academicFields" style="display:none">
+                  <div class="form-group">
+                    <label for="editorAbstract">Abstract / Resumen</label>
+                    <textarea id="editorAbstract" rows="4" placeholder="Resumen académico del artículo..."></textarea>
+                    <div class="char-counter"><span id="abstractCount">0</span>/800 caracteres</div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="editorDoi">DOI / URL Fuente</label>
+                      <input type="url" id="editorDoi" placeholder="https://doi.org/10.1000/xyz123">
+                    </div>
+                    <div class="form-group">
+                      <label for="editorVolumen">Volumen / Edición</label>
+                      <input type="text" id="editorVolumen" placeholder="Vol. 1, No. 2, 2026">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="toggle-label">
+                      <span class="toggle-switch">
+                        <input type="checkbox" id="editorPeerReviewed">
+                        <span class="toggle-slider"></span>
+                      </span>
+                      Revisado por pares (Peer-Reviewed)
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label for="editorReferencias">Referencias (una por línea)</label>
+                    <textarea id="editorReferencias" rows="6" placeholder="IEEE Std 802.11-2020&#10;Smith, J. (2023). Machine Learning...&#10;"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ SECCIÓN NOTICIA (colapsable) ═══ -->
+              <div class="editor-section-collapse" id="sectionNoticia" style="display:none">
+                <button type="button" class="collapse-toggle" onclick="toggleCollapse('noticiaFields')">
+                  <span>📰 Configuración de Noticia</span>
+                  <span class="collapse-arrow" id="noticiaArrow">▸</span>
+                </button>
+                <div class="collapse-body" id="noticiaFields" style="display:none">
+                  <div class="form-group">
+                    <label for="editorLeadParagraph">Párrafo de Entrada (Lead)</label>
+                    <textarea id="editorLeadParagraph" rows="3" placeholder="Párrafo introductorio destacado (aparece en grande sobre el cuerpo de la noticia)..."></textarea>
+                    <div class="char-counter"><span id="leadCount">0</span>/300 caracteres</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="toggle-label">
+                      <span class="toggle-switch">
+                        <input type="checkbox" id="editorEsDestacada">
+                        <span class="toggle-slider"></span>
+                      </span>
+                      Noticia Destacada (muestra badge "ÚLTIMA HORA")
+                    </label>
+                  </div>
+                  <div class="form-group" id="breakingLabelGroup" style="display:none">
+                    <label for="editorBreakingLabel">Texto del badge</label>
+                    <input type="text" id="editorBreakingLabel" placeholder="ÚLTIMA HORA" maxlength="30">
+                  </div>
+                </div>
               </div>
             </div>
             <div>
@@ -166,6 +259,29 @@
             <label for="noticiaDesc">Descripción *</label>
             <textarea id="noticiaDesc" rows="5" required></textarea>
           </div>
+
+          <!-- ═══ Lead paragraph ═══ -->
+          <div class="form-group">
+            <label for="noticiaLead">Párrafo de Entrada (Lead) <span class="field-badge">INMERSIVO</span></label>
+            <textarea id="noticiaLead" rows="3" placeholder="Frase introductoria impactante que aparecerá destacada al inicio de la noticia (opcional)..."></textarea>
+            <div class="char-counter"><span id="noticiaLeadCount">0</span>/300 caracteres</div>
+          </div>
+
+          <!-- ═══ Breaking badge ═══ -->
+          <div class="form-group">
+            <label class="toggle-label">
+              <span class="toggle-switch">
+                <input type="checkbox" id="noticiaDestacada" onchange="document.getElementById('noticiaBreakingGroup').style.display=this.checked?'block':'none'">
+                <span class="toggle-slider"></span>
+              </span>
+              Noticia Destacada — muestra badge <strong>"ÚLTIMA HORA"</strong>
+            </label>
+          </div>
+          <div class="form-group" id="noticiaBreakingGroup" style="display:none">
+            <label for="noticiaBreakingLabel">Texto del badge de urgencia</label>
+            <input type="text" id="noticiaBreakingLabel" placeholder="ÚLTIMA HORA" maxlength="30" value="ÚLTIMA HORA">
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label for="noticiaImagen">Imagen</label>
@@ -322,14 +438,15 @@
         <div id="usuariosList" class="content-list"></div>
       </section>
 
-      <!-- TAB: Imágenes del Sitio (Rama) -->
-      <section id="site-images" class="tab-content">
-        <h1>Imágenes del Sitio</h1>
-        <p class="empty-state">Cambia las imágenes promocionales de la página web.</p>
+      <!-- TAB: Configuración Global (Rama) -->
+      <section id="site-config" class="tab-content">
+        <h1>Configuración Global</h1>
+        <p class="empty-state">Administra las configuraciones, redes sociales y textos de la página web.</p>
 
+        <h2 class="section-subtitle" style="margin-top: 1rem;">Imágenes Promocionales</h2>
         <div class="welcome-cards" id="siteImagesList">
           <div class="card">
-            <h3>🖼️ Imagen de Portada (Hero)</h3>
+            <h3>Imagen de Portada (Hero)</h3>
             <p>Imagen principal que aparece en la página de inicio.</p>
             <div id="heroPreview" class="site-img-preview"></div>
             <form id="formHeroImage" class="admin-form" data-clave="hero">
@@ -347,7 +464,7 @@
           </div>
 
           <div class="card">
-            <h3>🏛️ Logo IEEE</h3>
+            <h3>Logo IEEE</h3>
             <p>Logo que aparece en la barra de navegación.</p>
             <div id="logoPreview" class="site-img-preview"></div>
             <form id="formLogoImage" class="admin-form" data-clave="logo">
@@ -360,12 +477,66 @@
             </form>
           </div>
         </div>
+
+        <h2 class="section-subtitle" style="margin-top: 2rem;">Ajustes Generales</h2>
+        <form id="formSiteSettings" class="admin-form" style="max-width: 800px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="settingEmail">Email Institucional</label>
+              <input type="email" id="settingEmail" placeholder="contacto@ieee-unmsm.org">
+            </div>
+            <div class="form-group">
+              <label for="settingHeroText">Texto Principal (Hero)</label>
+              <input type="text" id="settingHeroText" placeholder="Innovando para el futuro">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="settingFacebook">Facebook URL</label>
+              <input type="url" id="settingFacebook" placeholder="https://facebook.com/...">
+            </div>
+            <div class="form-group">
+              <label for="settingInstagram">Instagram URL</label>
+              <input type="url" id="settingInstagram" placeholder="https://instagram.com/...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="settingLinkedin">LinkedIn URL</label>
+              <input type="url" id="settingLinkedin" placeholder="https://linkedin.com/in/...">
+            </div>
+            <div class="form-group">
+              <label for="settingTwitter">Twitter / X URL</label>
+              <input type="url" id="settingTwitter" placeholder="https://twitter.com/...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="settingWhatsApp">WhatsApp URL</label>
+              <input type="url" id="settingWhatsApp" placeholder="https://wa.me/...">
+            </div>
+            <div class="form-group"></div>
+          </div>
+          <div class="form-group">
+            <label for="settingAddress">Dirección Oficial</label>
+            <input type="text" id="settingAddress" placeholder="Universidad Nacional Mayor de San Marcos\nLima, Perú">
+          </div>
+          <div class="form-group" style="display:flex; align-items:center; gap: 10px;">
+            <input type="checkbox" id="settingMaintenance" style="width:20px; height:20px;">
+            <label for="settingMaintenance" style="margin:0;">Modo Mantenimiento (Desactiva el sitio público temporalmente)</label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Guardar Configuraciones</button>
+          </div>
+          <div id="settingsStatus" class="status-message hidden"></div>
+        </form>
       </section>
 
       <!-- TAB: Crear Revista -->
       <section id="crear-revista" class="tab-content">
         <h1>Nueva Edición de Revista</h1>
         <form id="formRevista" class="admin-form">
+          <input type="hidden" id="revistaId" value="">
           <div class="form-row">
             <div class="form-group">
               <label for="revistaTitulo">Título *</label>
@@ -380,6 +551,10 @@
             <div class="form-group">
               <label for="revistaFecha">Fecha de publicación *</label>
               <input type="date" id="revistaFecha" required>
+            </div>
+            <div class="form-group">
+              <label for="revistaEtiquetas">Etiquetas (separadas por comas)</label>
+              <input type="text" id="revistaEtiquetas" placeholder="Ej: WIE, Machine Learning, Tecnología">
             </div>
           </div>
           <div class="form-group">
@@ -402,7 +577,47 @@
           </div>
           <div id="revistaStatus" class="status-message hidden"></div>
         </form>
+        <h2 class="section-subtitle" style="margin-top: 2rem;">Revistas Publicadas</h2>
+        <div id="revistasList" class="content-list"></div>
       </section>
+
+      <!-- TAB: FAQ -->
+      <section id="faq" class="tab-content">
+        <h1>Preguntas Frecuentes (FAQ)</h1>
+        <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Gestiona las preguntas que aparecen en la página de Contacto. Los cambios se reflejan al instante.</p>
+        <div class="form-actions" style="margin-bottom:1.5rem;">
+          <button type="button" class="btn-primary" id="btnNuevaPregunta">+ Nueva Pregunta</button>
+        </div>
+        <div id="faqAdminList" class="content-list"></div>
+      </section>
+
+      <!-- MODAL: Editar / Crear FAQ -->
+      <div id="faqModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
+        <div class="modal-panel modal-sm">
+          <button class="modal-close" id="faqModalClose" aria-label="Cerrar">&times;</button>
+          <h3 id="faqModalTitle">Pregunta FAQ</h3>
+          <form id="formFaq" class="admin-form" novalidate>
+            <input type="hidden" id="faqId">
+            <div class="form-group">
+              <label for="faqPregunta">Pregunta *</label>
+              <input type="text" id="faqPregunta" required placeholder="¿Cómo...?">
+            </div>
+            <div class="form-group">
+              <label for="faqRespuesta">Respuesta *</label>
+              <textarea id="faqRespuesta" rows="5" required placeholder="La respuesta detallada..."></textarea>
+            </div>
+            <div class="form-group" style="max-width:120px;">
+              <label for="faqOrden">Orden</label>
+              <input type="number" id="faqOrden" min="0" value="0">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">Guardar</button>
+              <button type="button" id="faqModalCancel" class="btn-outline">Cancelar</button>
+            </div>
+            <div id="faqStatus" class="status-message hidden"></div>
+          </form>
+        </div>
+      </div>
 
       <!-- TAB: Subir Galería -->
       <section id="subir-galeria" class="tab-content">
@@ -417,6 +632,10 @@
             <input type="text" id="galeriaEvento" placeholder="Ej: Workshop 2026, Conferencia anual">
           </div>
           <div class="form-group">
+            <label for="galeriaEtiquetas">Etiquetas (separadas por comas)</label>
+            <input type="text" id="galeriaEtiquetas" placeholder="Ej: WIE, Machine Learning, Taller">
+          </div>
+          <div class="form-group">
             <label for="galeriaFotos">Fotos (máx 20) *</label>
             <input type="file" id="galeriaFotos" accept="image/*" multiple required>
           </div>
@@ -425,6 +644,8 @@
           </div>
           <div id="galeriaStatus" class="status-message hidden"></div>
         </form>
+        <h2 class="section-subtitle" style="margin-top: 2rem;">Fotos en Galería</h2>
+        <div id="galeriaList" class="content-list" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
       </section>
     </main>
   </div>
@@ -439,9 +660,9 @@
 
       <!-- Tabs navigation -->
       <div class="cap-tabs" role="tablist">
-        <button class="cap-tab active" data-cap-tab="info"    role="tab" aria-selected="true">📋 Información</button>
-        <button class="cap-tab"        data-cap-tab="images"  role="tab">🖼️ Imágenes</button>
-        <button class="cap-tab"        data-cap-tab="contact" role="tab">🔗 Contacto y Redes</button>
+        <button class="cap-tab active" data-cap-tab="info"    role="tab" aria-selected="true">Información</button>
+        <button class="cap-tab"        data-cap-tab="images"  role="tab">Imágenes</button>
+        <button class="cap-tab"        data-cap-tab="contact" role="tab">Contacto y Redes</button>
       </div>
 
       <form id="formCapituloEditor" class="admin-form" novalidate>
@@ -570,6 +791,75 @@
   </div>
 
 
+  <!-- Modal: Editar Usuario -->
+  <div id="editUserModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editUserModalTitle">
+    <div class="modal-panel modal-sm">
+      <button class="modal-close" id="editUserModalClose" aria-label="Cerrar">×</button>
+      <h3 id="editUserModalTitle">Editar Usuario</h3>
+      <form id="formEditUser" class="admin-form" novalidate>
+        <input type="hidden" id="editUserId">
+        <div class="form-group">
+          <label for="editUserNombre">Nombre *</label>
+          <input type="text" id="editUserNombre" required>
+        </div>
+        <div class="form-group">
+          <label for="editUserEmail">Email *</label>
+          <input type="email" id="editUserEmail" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editUserRol">Rol *</label>
+            <select id="editUserRol" required>
+              <option value="director_capitulo">Director de Capítulo</option>
+              <option value="director_rama">Director de Rama</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editUserCapitulo">Capítulo</label>
+            <input type="text" id="editUserCapitulo" placeholder="Ej: WIE, RAS">
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
+          <button type="button" id="editUserCancelBtn" class="btn-outline">Cancelar</button>
+        </div>
+        <div id="editUserStatus" class="status-message hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Aprobar / Rechazar con comentario -->
+  <div id="approvalModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-panel modal-sm">
+      <button class="modal-close" id="approvalModalClose" aria-label="Cerrar">×</button>
+      <h3 id="approvalModalTitle">Aprobar contenido</h3>
+      <div class="form-group">
+        <label for="approvalComment">Comentario (opcional)</label>
+        <textarea id="approvalComment" rows="3" placeholder="Añade una observación al autor..."></textarea>
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button id="approvalConfirmBtn" class="btn-primary">Confirmar</button>
+        <button id="approvalCancelBtn" class="btn-outline">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmación Genérica -->
+  <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-panel modal-sm" style="text-align: center;">
+      <h3 id="confirmModalTitle" style="margin-bottom: 10px;">Confirmar Acción</h3>
+      <p id="confirmModalMessage" style="margin-bottom: 20px; color: var(--text-secondary);">¿Estás seguro?</p>
+      <div class="form-actions" style="justify-content: center; gap: 10px;">
+        <button id="confirmModalCancelBtn" class="btn-outline">Cancelar</button>
+        <button id="confirmModalAcceptBtn" class="btn-primary danger">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
   <script src="admin.js"></script>
   <script src="dashboard.js"></script>

@@ -79,6 +79,8 @@
           return;
         }
 
+
+
         // Guardar token y usuario
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -86,7 +88,8 @@
         // Redirigir al dashboard
         window.location.href = 'dashboard.html';
       } catch (err) {
-        errorDiv.textContent = 'Error de conexión al servidor';
+        console.error("Login fetch error:", err);
+        errorDiv.textContent = 'Error de conexión: ' + err.message;
         errorDiv.classList.remove('hidden');
       }
     }

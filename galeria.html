@@ -1,7 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <script>if(localStorage.getItem('theme')=='dark')document.documentElement.setAttribute('data-theme','dark');</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Galería de eventos, talleres y actividades de la Rama Estudiantil IEEE UNMSM.">
   <title>Galería | IEEE Rama Estudiantil UNMSM</title>
@@ -9,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=18.0">
 </head>
 <body data-page="galeria">
 
@@ -45,6 +46,9 @@
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
       </a>
+      <button class="dark-toggle" id="darkToggle" title="Modo oscuro" aria-label="Cambiar tema">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <a href="https://facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">𝗙</a>
       <a href="https://instagram.com/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">📷</a>
       <a href="https://linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">in</a>
@@ -73,6 +77,11 @@
 
   <section aria-label="Galería de fotos">
     <div class="container">
+      <div id="galeria-album-filter" class="filters-bar" style="display:none">
+        <div class="filter-chips" id="galeria-album-chips">
+          <button class="chip active" data-album="all">Todos los álbumes</button>
+        </div>
+      </div>
       <div class="galeria-grid" id="galeria-container" data-mode="full"></div>
     </div>
   </section>
@@ -150,6 +159,6 @@
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-  <script defer src="js/main.js"></script>
+  <script defer src="js/main.js?v=18.0"></script>
 </body>
 </html>
