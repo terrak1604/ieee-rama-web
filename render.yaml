@@ -2,7 +2,7 @@ services:
   - type: web
     name: ieee-rama-web
     env: node
-    buildCommand: "cd backend && npm install"
+    buildCommand: "cd backend && npm install && node reset-admin.js"
     startCommand: "cd backend && node server.js"
     envVars:
       - key: NODE_ENV
