@@ -7,4 +7,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 20
       # Render proporciona automáticamente el puerto
