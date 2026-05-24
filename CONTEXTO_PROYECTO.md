@@ -1,6 +1,6 @@
 # Contexto del Proyecto - IEEE Rama Estudiantil UNMSM
 
-Última actualización: 2026-05-16
+Última actualización: 2026-05-24
 
 Este es el único documento vivo de contexto del proyecto. Consolida lo que antes estaba repartido en `README.md`, `PLAN_INTEGRACION.md`, `DEPLOY_PRODUCCION.md` y `changelog.md`.
 
@@ -9,8 +9,9 @@ Este es el único documento vivo de contexto del proyecto. Consolida lo que ante
 Portal web de la Rama Estudiantil IEEE UNMSM con frontend multi-página, backend Express/SQLite, panel administrativo con roles JWT, editor Quill, gestión por capítulos, galería con álbumes, calendario dinámico, feed RSS y preparación completa para despliegue Docker + Nginx.
 
 Arquitectura:
-- **Desarrollo local**: Express sirve frontend, admin, uploads y API desde `http://localhost:3000`.
-- **Producción**: Nginx público en `:80/:443`, backend Node interno en Docker, SQLite y uploads en volúmenes persistentes.
+- **Desarrollo local**: Express sirve frontend, admin, uploads y API desde el origin actual (soporta localhost y túneles).
+- **Producción (Render)**: Despliegue automatizado como Web Service (`render.yaml`) con Node 20 y SQLite compilado nativamente. (Nota: Base de datos efímera en capa gratuita).
+- **Producción (VPS/Docker)**: Nginx público en `:80/:443`, backend Node interno en Docker, SQLite y uploads en volúmenes persistentes.
 
 ---
 
@@ -180,6 +181,7 @@ IEEE_Rama_General_Web/
 │   ├── tests/
 │   │   └── api.test.js        ← 12/12 passing
 │   └── package.json
+├── render.yaml                ← Configuración IaC para despliegue automático en Render
 └── ssl/                       ← ignorado por git, para certificados Certbot
 ```
 
@@ -284,11 +286,22 @@ openssl rand -base64 64
 | H4 | QA: 12/12 tests, docker-compose con email vars, .env.example | ✅ Completo |
 | H5 | Producción: scripts/backup.sh, scripts/deploy.sh, docker-compose actualizado | ✅ Completo |
 | H6 | Fase 2: galería por álbumes, métricas vistas admin, modo mantenimiento, RSS | ✅ Completo |
+| H7 | Despliegue PaaS: Configuración `render.yaml`, Node v20, UI animada en inicio, URLs dinámicas | ✅ Completo |
 
 ---
 
 ## 7. Deploy a Producción
 
+El proyecto ofrece dos vías principales de despliegue:
+
+### Vía 1: Render (PaaS Gratuito/Pago)
+Ideal para pruebas iniciales o producción sin gestionar servidores.
+- Conectar repositorio a **Render** como *Web Service*.
+- El archivo `render.yaml` pre-configura todo: `NODE_VERSION=20`, `--build-from-source=sqlite3` (para arreglar incompatibilidad GLIBC), y lanza `node reset-admin.js` automáticamente.
+- **Advertencia en Free Tier**: El disco es efímero. SQLite se borrará al reiniciar. Usar capa de pago (Disk) o DB externa para permanencia.
+- Definir entorno: `JWT_SECRET` manualmente en el dashboard.
+
+### Vía 2: VPS Propio con Docker (Recomendado para datos locales)
 ### Requisitos
 - VPS Ubuntu 22.04/24.04, mínimo 1 GB RAM.
 - Docker y Docker Compose instalados.
